@@ -4,13 +4,16 @@ import { analyzeMoneyLeaks } from '../../src/services/leakDetectionService';
 import { calculateMonthlySummary } from '../../src/services/summaryService';
 import { calculateDebtPlan } from '../../src/services/debtPlanService';
 import { calculateEmergencyFundPlan } from '../../src/services/emergencyFundService';
+import { generateActionPlan } from '../../src/services/actionPlanService';
 import { LeakSection } from './components/LeakSection';
 import { DebtEmergencySection } from './components/DebtEmergencySection';
 import { SmartGrocerySection } from './components/SmartGrocerySection';
+import { HealthCheckSection } from './components/HealthCheckSection';
+import { ActionPlanSection } from './components/ActionPlanSection';
 import { EditProfileModal } from './components/EditProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
-import { RotateCcw, ShieldCheck, ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, SlidersHorizontal, Cloud, CloudCheck } from 'lucide-react';
+import { RotateCcw, ShieldCheck, ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, SlidersHorizontal, Cloud } from 'lucide-react';
 
 const INITIAL_PROFILE: UserFinancialProfile = {
   ingresosNetosMensuales: 2250,
@@ -125,6 +128,16 @@ export function App() {
   const leaksResult = analyzeMoneyLeaks(perfil.fugasPresupuesto, perfil);
   const debtPlan = calculateDebtPlan(perfil);
   const emergencyPlan = calculateEmergencyFundPlan(perfil);
+  const actionPlan = generateActionPlan(perfil, summary, debtPlan, emergencyPlan);
+
+  // Desglose para la regla 50/30/20
+  const gastosNecesidades = summary.gastosFijosTotal + perfil.gastosVariables.supermercado;
+  const gastosDeseos =
+    perfil.gastosVariables.ocio +
+    perfil.gastosVariables.comidasFuera +
+    perfil.gastosVariables.comprasOnline +
+    perfil.gastosVariables.otros;
+  const ahorroYDeudas = summary.cuotasDeudaTotal + summary.ahorroComprometido + Math.max(0, summary.dineroLibre);
 
   const handleAddLeak = (leak: MoneyLeakInput) => {
     setPerfil((prev) => ({
@@ -291,6 +304,21 @@ export function App() {
             </div>
           </div>
         </div>
+
+        {/* Sección: Plan de Acción Priorizado del Mes */}
+        <section>
+          <ActionPlanSection items={actionPlan} />
+        </section>
+
+        {/* Sección: Semáforo de Salud Financiera 50 / 30 / 20 */}
+        <section>
+          <HealthCheckSection
+            ingresos={summary.ingresos}
+            gastosNecesidades={gastosNecesidades}
+            gastosDeseos={gastosDeseos}
+            ahorroYDeudas={ahorroYDeudas}
+          />
+        </section>
 
         {/* Sección: Auditoría de Fugas de Dinero */}
         <section>
