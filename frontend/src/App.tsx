@@ -10,9 +10,11 @@ import { DebtEmergencySection } from './components/DebtEmergencySection';
 import { SmartGrocerySection } from './components/SmartGrocerySection';
 import { HealthCheckSection } from './components/HealthCheckSection';
 import { ActionPlanSection } from './components/ActionPlanSection';
+import { BankLedgerSection } from './components/BankLedgerSection';
 import { EditProfileModal } from './components/EditProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
+import type { FinancialTransaction } from '../../src/models/types';
 import { RotateCcw, ShieldCheck, ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, SlidersHorizontal, Cloud } from 'lucide-react';
 
 const INITIAL_PROFILE: UserFinancialProfile = {
@@ -151,6 +153,30 @@ export function App() {
       ...prev,
       fugasPresupuesto: (prev.fugasPresupuesto || []).filter((_, i) => i !== index),
     }));
+  };
+
+  const handleAddTransaction = (tx: FinancialTransaction) => {
+    const updatedMovs = [tx, ...(perfil.movimientosReales || [])];
+    saveProfileWithSync({
+      ...perfil,
+      movimientosReales: updatedMovs,
+    });
+  };
+
+  const handleImportTransactions = (txs: FinancialTransaction[]) => {
+    const updatedMovs = [...txs, ...(perfil.movimientosReales || [])];
+    saveProfileWithSync({
+      ...perfil,
+      movimientosReales: updatedMovs,
+    });
+  };
+
+  const handleRemoveTransaction = (id: string) => {
+    const updatedMovs = (perfil.movimientosReales || []).filter((t) => t.id !== id);
+    saveProfileWithSync({
+      ...perfil,
+      movimientosReales: updatedMovs,
+    });
   };
 
   const handleReset = () => {
@@ -317,6 +343,17 @@ export function App() {
             gastosNecesidades={gastosNecesidades}
             gastosDeseos={gastosDeseos}
             ahorroYDeudas={ahorroYDeudas}
+          />
+        </section>
+
+        {/* Sección: Control Real de Tesorería (Movimientos e Importación Bancaria) */}
+        <section>
+          <BankLedgerSection
+            transactions={perfil.movimientosReales || []}
+            onAddTransaction={handleAddTransaction}
+            onImportTransactions={handleImportTransactions}
+            onRemoveTransaction={handleRemoveTransaction}
+            supermercadoPresupuestado={perfil.gastosVariables.supermercado}
           />
         </section>
 

@@ -37,18 +37,7 @@ export interface SmartGroceryInput {
   presupuestoMaximo: number;
 }
 
-export interface UserFinancialProfile {
-  ingresosNetosMensuales: number;
-  dineroDisponibleActual: number;
-  gastosFijos: FixedExpenses;
-  gastosVariables: VariableExpenses;
-  deudas: DebtItem[];
-  fondoEmergenciaActual: number;
-  objetivoAhorroMensual: number;
-  proximosGastosExcepcionales: ExceptionalExpense[];
-  compraInteligente?: SmartGroceryInput;
-  fugasPresupuesto?: MoneyLeakInput[];
-}
+
 
 export type LeakFrequency = 'diario' | 'semanal' | 'mensual' | 'anual';
 export type LeakCategory = 'hormiga' | 'vampiro' | 'prescindible';
@@ -176,4 +165,50 @@ export interface ActionPlanItem {
   impacto: 'ALTO' | 'MEDIO' | 'MODERADO';
   titulo: string;
   descripcion: string;
+}
+
+export interface BankAccount {
+  id: string;
+  nombre: string;
+  tipo: 'corriente' | 'ahorro' | 'efectivo' | 'inversion';
+  saldoActual: number;
+}
+
+export type TransactionCategory =
+  | 'nomina'
+  | 'ingreso_extra'
+  | 'vivienda'
+  | 'suministros'
+  | 'supermercado'
+  | 'ocio_restaurantes'
+  | 'compras'
+  | 'transporte'
+  | 'salud'
+  | 'deuda'
+  | 'suscripciones'
+  | 'otros';
+
+export interface FinancialTransaction {
+  id: string;
+  fecha: string; // YYYY-MM-DD
+  concepto: string;
+  importe: number; // Positivo para ingresos, negativo para gastos
+  categoria: TransactionCategory;
+  cuentaId?: string;
+  esFugaDetectada?: boolean;
+}
+
+export interface UserFinancialProfile {
+  ingresosNetosMensuales: number;
+  dineroDisponibleActual: number;
+  gastosFijos: FixedExpenses;
+  gastosVariables: VariableExpenses;
+  deudas: DebtItem[];
+  fondoEmergenciaActual: number;
+  objetivoAhorroMensual: number;
+  proximosGastosExcepcionales: ExceptionalExpense[];
+  compraInteligente?: SmartGroceryInput;
+  fugasPresupuesto?: MoneyLeakInput[];
+  cuentasBancarias?: BankAccount[];
+  movimientosReales?: FinancialTransaction[];
 }
