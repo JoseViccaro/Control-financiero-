@@ -198,60 +198,71 @@ export const SmartGrocerySection: React.FC = () => {
         )}
       </div>
 
-      {/* MODO SUPERMERCADO MÓVIL (Opción 3) */}
+      {/* MODO SUPERMERCADO MÓVIL (Opción 3 - Diseño Limpio, Claro y Ultra Legible) */}
       {modoSupermercado ? (
-        <div className="p-6 bg-slate-900 text-white rounded-3xl space-y-6 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="p-6 sm:p-8 bg-slate-50 rounded-3xl border border-slate-200/80 space-y-6 animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
             <div>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">Modo Compra Activa</span>
-              <h3 className="text-lg font-bold">En el Supermercado</h3>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                Modo Compra Activa
+              </span>
+              <h3 className="text-xl font-bold text-slate-900 mt-1">En el Supermercado</h3>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-400">En Carrito / Total</p>
-              <p className="text-xl font-mono font-bold text-emerald-400">
-                {totalComprado.toFixed(2)} € <span className="text-sm font-normal text-slate-400">/ {totalCesta.toFixed(2)} €</span>
+              <p className="text-xs text-slate-400 font-medium">Llevas en Carrito / Total</p>
+              <p className="text-2xl font-mono font-extrabold text-slate-900">
+                {totalComprado.toFixed(2)} €{' '}
+                <span className="text-sm font-normal text-slate-400">/ {totalCesta.toFixed(2)} €</span>
               </p>
             </div>
           </div>
 
-          <div className="p-3 bg-slate-800/80 rounded-2xl flex items-center justify-between text-xs">
-            <span className="text-slate-300">Te queda por gastar:</span>
-            <span className={`font-mono font-bold text-sm ${totalRestante >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {totalRestante.toFixed(2)} €
+          <div className="p-4 bg-white rounded-2xl border border-slate-200/70 shadow-xs flex items-center justify-between">
+            <div>
+              <span className="text-xs text-slate-500 font-medium">Presupuesto Restante:</span>
+              <p className={`font-mono font-extrabold text-lg ${totalRestante >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {totalRestante.toFixed(2)} €
+              </p>
+            </div>
+            <span className="text-xs text-slate-400">
+              {totalRestante >= 0 ? 'Dentro de tu objetivo' : '¡Cuidado! Superas el presupuesto'}
             </span>
           </div>
 
-          {/* Lista táctil grande para el móvil */}
-          <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+          {/* Lista táctil clara y ultra-legible para el móvil */}
+          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
             {allItems.map((item, idx) => {
               const isChecked = !!checkedItems[item.nombre];
               return (
                 <div
                   key={idx}
                   onClick={() => toggleCheck(item.nombre)}
-                  className={`p-4 rounded-2xl border transition flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.99] ${
+                  className={`p-4 rounded-2xl border transition flex items-center justify-between gap-4 cursor-pointer select-none active:scale-[0.99] ${
                     isChecked
-                      ? 'bg-slate-800/40 border-slate-800 opacity-40 line-through'
-                      : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                      ? 'bg-slate-100/70 border-slate-200 opacity-50 line-through'
+                      : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3.5">
                     <div
                       className={`w-6 h-6 rounded-xl border flex items-center justify-center transition ${
                         isChecked
-                          ? 'bg-emerald-500 border-emerald-500 text-slate-900'
-                          : 'border-slate-600 bg-slate-700'
+                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                          : 'border-slate-300 bg-slate-50'
                       }`}
                     >
                       {isChecked && <Check className="w-4 h-4 stroke-[3]" />}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-white">{item.nombre}</p>
-                      <p className="text-[11px] text-slate-400">{item.cantidad} • {item.seccion}</p>
+                      <p className="font-bold text-sm text-slate-900">{item.nombre}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {getSectionBadge(item.seccion)}
+                        <span className="text-xs text-slate-400 font-medium">{item.cantidad}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <p className="text-sm font-bold font-mono text-emerald-400">{item.costeEstimado.toFixed(2)} €</p>
+                  <p className="text-base font-extrabold font-mono text-slate-900">{item.costeEstimado.toFixed(2)} €</p>
                 </div>
               );
             })}
