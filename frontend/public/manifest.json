@@ -1,0 +1,17 @@
+{
+  "name": "Control Financiero",
+  "short_name": "ControlFin",
+  "description": "Gestión financiera personal, auditoría de fugas y desendeudamiento",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

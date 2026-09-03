@@ -1,0 +1,249 @@
+import { useState, useEffect } from 'react';
+import type { UserFinancialProfile, MoneyLeakInput } from '../../src/models/types';
+import { analyzeMoneyLeaks } from '../../src/services/leakDetectionService';
+import { calculateMonthlySummary } from '../../src/services/summaryService';
+import { calculateDebtPlan } from '../../src/services/debtPlanService';
+import { calculateEmergencyFundPlan } from '../../src/services/emergencyFundService';
+import { LeakSection } from './components/LeakSection';
+import { DebtEmergencySection } from './components/DebtEmergencySection';
+import { SmartGrocerySection } from './components/SmartGrocerySection';
+import { EditProfileModal } from './components/EditProfileModal';
+import { RotateCcw, ShieldCheck, ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, SlidersHorizontal } from 'lucide-react';
+
+const INITIAL_PROFILE: UserFinancialProfile = {
+  ingresosNetosMensuales: 2250,
+  dineroDisponibleActual: 1800,
+  gastosFijos: {
+    vivienda: 650,
+    suministros: 90,
+    telefono: 35,
+    internet: 40,
+    seguros: 45,
+    transporte: 70,
+    cuotas: 0,
+  },
+  gastosVariables: {
+    supermercado: 380,
+    ocio: 180,
+    comidasFuera: 120,
+    comprasOnline: 90,
+    otros: 50,
+  },
+  deudas: [
+    { nombre: 'Tarjeta de Crédito', saldoPendiente: 1200, tipoInteres: 21.5, cuotaMensual: 90, fechaPago: '05' },
+    { nombre: 'Préstamo Coche', saldoPendiente: 4500, tipoInteres: 6.9, cuotaMensual: 145, fechaPago: '10' },
+  ],
+  fondoEmergenciaActual: 450,
+  objetivoAhorroMensual: 200,
+  proximosGastosExcepcionales: [],
+  fugasPresupuesto: [
+    { nombre: 'Café y snack diario de máquina', monto: 2.60, frecuencia: 'diario', categoria: 'hormiga' },
+    { nombre: 'Suscripción streaming en desuso', monto: 14.99, frecuencia: 'mensual', categoria: 'vampiro' },
+    { nombre: 'App fitness que no utilizo', monto: 89.00, frecuencia: 'anual', categoria: 'vampiro' },
+    { nombre: 'Comida a domicilio por impulso', monto: 25.00, frecuencia: 'semanal', categoria: 'prescindible' },
+  ],
+};
+
+export function App() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [perfil, setPerfil] = useState<UserFinancialProfile>(() => {
+    const saved = localStorage.getItem('control_financiero_profile');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parseando perfil guardado', e);
+      }
+    }
+    return INITIAL_PROFILE;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('control_financiero_profile', JSON.stringify(perfil));
+  }, [perfil]);
+
+  // Cálculos en tiempo real utilizando directamente el motor TypeScript
+  const summary = calculateMonthlySummary(perfil);
+  const leaksResult = analyzeMoneyLeaks(perfil.fugasPresupuesto, perfil);
+  const debtPlan = calculateDebtPlan(perfil);
+  const emergencyPlan = calculateEmergencyFundPlan(perfil);
+
+  const handleAddLeak = (leak: MoneyLeakInput) => {
+    setPerfil((prev) => ({
+      ...prev,
+      fugasPresupuesto: [...(prev.fugasPresupuesto || []), leak],
+    }));
+  };
+
+  const handleRemoveLeak = (index: number) => {
+    setPerfil((prev) => ({
+      ...prev,
+      fugasPresupuesto: (prev.fugasPresupuesto || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleReset = () => {
+    if (confirm('¿Restablecer datos a los valores de ejemplo iniciales?')) {
+      setPerfil(INITIAL_PROFILE);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-900 selection:text-white">
+      {/* Modal para Editar y Personalizar Datos */}
+      <EditProfileModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        currentProfile={perfil}
+        onSave={(updated) => setPerfil(updated)}
+      />
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-10">
+        
+        {/* Header Superior Limpio con Botón de Ajustes */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <img
+              src="/app-icon.png"
+              alt="Control Financiero"
+              className="w-12 h-12 rounded-2xl shadow-md shadow-slate-200 border border-slate-100 object-cover"
+            />
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400">
+                  Tu Salud Financiera
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                Control Financiero
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition shadow-md cursor-pointer"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-emerald-400" /> Meter Mis Datos
+            </button>
+
+            <button
+              onClick={handleReset}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-medium text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200/80 transition shadow-2xs cursor-pointer"
+              title="Restablecer datos demo"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              <ShieldCheck className="w-3.5 h-3.5" /> 100% Privado
+            </div>
+          </div>
+        </header>
+
+        {/* Tarjetas KPI Superiores */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div
+            onClick={() => setIsModalOpen(true)}
+            className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm shadow-slate-100/60 space-y-3 hover:border-slate-300 transition cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition">Ingresos Netos</span>
+              <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-extrabold tracking-tight text-slate-900">
+                {summary.ingresos.toFixed(2)} <span className="text-lg font-normal text-slate-400">€</span>
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Haz clic para editar</p>
+            </div>
+          </div>
+
+          <div
+            onClick={() => setIsModalOpen(true)}
+            className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm shadow-slate-100/60 space-y-3 hover:border-slate-300 transition cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition">Gastos Fijos</span>
+              <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500">
+                <Wallet className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-extrabold tracking-tight text-slate-900">
+                {summary.gastosFijosTotal.toFixed(2)} <span className="text-lg font-normal text-slate-400">€</span>
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Vivienda, suministros, seguros...</p>
+            </div>
+          </div>
+
+          <div
+            onClick={() => setIsModalOpen(true)}
+            className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm shadow-slate-100/60 space-y-3 hover:border-slate-300 transition cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition">Gastos Variables</span>
+              <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500">
+                <ArrowDownRight className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-extrabold tracking-tight text-slate-900">
+                {summary.gastosVariablesTotal.toFixed(2)} <span className="text-lg font-normal text-slate-400">€</span>
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Supermercado, ocio, comidas...</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 border border-emerald-200/80 shadow-sm shadow-emerald-50 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-emerald-700">Capacidad de Ahorro</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <PiggyBank className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-extrabold tracking-tight text-emerald-600">
+                {summary.dineroLibre.toFixed(2)} <span className="text-lg font-normal text-emerald-400">€</span>
+              </p>
+              <p className="text-xs text-slate-400 mt-1">Excedente neto libre al mes</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Sección: Auditoría de Fugas de Dinero */}
+        <section>
+          <LeakSection
+            leaks={leaksResult.fugas}
+            agregado={leaksResult.agregado}
+            impacto={leaksResult.impacto}
+            onAddLeak={handleAddLeak}
+            onRemoveLeak={handleRemoveLeak}
+          />
+        </section>
+
+        {/* Sección: Metas de Seguridad y Deudas */}
+        <section>
+          <DebtEmergencySection
+            emergencyPlan={emergencyPlan}
+            debtPlan={debtPlan}
+          />
+        </section>
+
+        {/* Sección: Compra Inteligente de Supermercado */}
+        <section>
+          <SmartGrocerySection />
+        </section>
+
+        <footer className="text-center pt-8 border-t border-slate-200/60 text-xs text-slate-400">
+          Control Financiero • Tus datos no salen de tu ordenador • Persistencia automática en navegador
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+export default App;

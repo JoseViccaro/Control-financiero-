@@ -1,0 +1,47 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Node.js (v18+), TypeScript 7, Vitest 4, tsx
+  Architecture: Modular CLI & domain services (reportService, debtService, budgetService)
+  Testing: Vitest unit test runner (npm test -> vitest run)
+  Style: ES modules, strict TypeScript, Euro currency (€), zero-sensitive-data principle
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns
+    tdd: true
+    test_command: "npm test"
+  verify:
+    test_command: "npm test"
+    build_command: "npx tsc --noEmit"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: true
+  test_runner:
+    command: "npm test"
+    framework: "Vitest"
+  layers:
+    unit: true
+    integration: false
+    e2e: false
+  coverage:
+    available: true
+    command: "npx vitest run --coverage"
+  quality_tools:
+    linter: null
+    type_checker: "npx tsc --noEmit"
+    formatter: null
