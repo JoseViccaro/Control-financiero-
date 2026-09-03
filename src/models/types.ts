@@ -195,6 +195,8 @@ export interface FinancialTransaction {
   importe: number; // Positivo para ingresos, negativo para gastos
   categoria: TransactionCategory;
   cuentaId?: string;
+  titular?: string; // Ej: 'Yo', 'Esposa', 'Cuenta Conjunta'
+  mes?: string; // Formato YYYY-MM (ej: '2026-09') para el histórico mensual
   esFugaDetectada?: boolean;
 }
 

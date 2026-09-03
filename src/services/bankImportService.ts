@@ -1,6 +1,6 @@
 import { FinancialTransaction, TransactionCategory, UserFinancialProfile } from '../models/types.js';
 
-export function parseBankCSV(csvText: string): FinancialTransaction[] {
+export function parseBankCSV(csvText: string, titular: string = 'Titular Principal'): FinancialTransaction[] {
   const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   const transactions: FinancialTransaction[] = [];
 
@@ -40,12 +40,26 @@ export function parseBankCSV(csvText: string): FinancialTransaction[] {
 
     if (fecha && importe !== 0) {
       const cat = autoCategorizeConcepto(concepto);
+      
+      // Normalizar fecha a formato YYYY-MM para agrupación mensual
+      let mes = '';
+      if (/^\d{4}[-/]\d{2}/.test(fecha)) {
+        mes = fecha.substring(0, 7).replace('/', '-');
+      } else if (/^\d{2}[-/]\d{2}[-/]\d{4}/.test(fecha)) {
+        const parts = fecha.split(/[-/]/);
+        mes = `${parts[2]}-${parts[1]}`;
+      } else {
+        mes = new Date().toISOString().substring(0, 7);
+      }
+
       transactions.push({
         id: 'tx_' + Math.random().toString(36).substring(2, 9),
         fecha,
         concepto: concepto || 'Movimiento bancario',
         importe,
         categoria: cat,
+        titular,
+        mes,
         esFugaDetectada: detectFugaInTransaction(concepto, importe)
       });
     }

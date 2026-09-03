@@ -157,9 +157,12 @@ export function App() {
     });
   };
 
-  const handleImportTransactions = (txs: FinancialTransaction[]) => {
-    const allMovs = [...txs, ...(perfil.movimientosReales || [])];
-    // Reconstruir automáticamente el perfil con las categorías y números reales del extracto
+  const handleImportTransactions = (txs: FinancialTransaction[], titular?: string) => {
+    // Si viene titular, asegurar que cada transacción lo tenga
+    const taggedTxs = titular ? txs.map(t => ({ ...t, titular })) : txs;
+    const allMovs = [...taggedTxs, ...(perfil.movimientosReales || [])];
+    
+    // Reconstruir automáticamente el perfil con las categorías y números reales del conjunto
     const updatedProfile = buildProfileFromTransactions(allMovs, perfil);
     saveProfileWithSync(updatedProfile);
   };

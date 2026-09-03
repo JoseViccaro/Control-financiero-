@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import type { FinancialTransaction, TransactionCategory } from '../../../src/models/types';
 import { parseBankCSV } from '../../../src/services/bankImportService';
-import { Upload, Plus, Trash2, ArrowUpRight, ArrowDownRight, AlertCircle, FileSpreadsheet, Check, Sparkles } from 'lucide-react';
+import { Upload, Plus, Trash2, FileSpreadsheet, Users, Calendar, Filter } from 'lucide-react';
 
 interface BankLedgerSectionProps {
   transactions: FinancialTransaction[];
   onAddTransaction: (tx: FinancialTransaction) => void;
-  onImportTransactions: (txs: FinancialTransaction[]) => void;
+  onImportTransactions: (txs: FinancialTransaction[], titular: string) => void;
   onRemoveTransaction: (id: string) => void;
   supermercadoPresupuestado: number;
 }
@@ -19,26 +19,49 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
   supermercadoPresupuestado,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importTitular, setImportTitular] = useState('Mi Nómina / Yo');
+
+  // Filtros de mes y titular
+  const [filtroMes, setFiltroMes] = useState<string>('todos');
+  const [filtroTitular, setFiltroTitular] = useState<string>('todos');
+
+  // Formulario manual
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [concepto, setConcepto] = useState('');
   const [importe, setImporte] = useState('');
   const [categoria, setCategoria] = useState<TransactionCategory>('supermercado');
+  const [titularManual, setTitularManual] = useState('Yo');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cálculos reales de tesorería
-  const totalIngresosReales = transactions
+  // Obtener meses únicos presentes en las transacciones para el selector
+  const mesesDisponibles = Array.from(
+    new Set(
+      transactions
+        .map((t) => t.mes || (t.fecha ? t.fecha.substring(0, 7) : ''))
+        .filter(Boolean)
+    )
+  ).sort().reverse();
+
+  // Transacciones filtradas según mes y titular
+  const transaccionesFiltradas = transactions.filter((t) => {
+    const cumpleMes = filtroMes === 'todos' || t.mes === filtroMes || t.fecha.startsWith(filtroMes);
+    const cumpleTitular = filtroTitular === 'todos' || t.titular === filtroTitular;
+    return cumpleMes && cumpleTitular;
+  });
+
+  // Cálculos reales de tesorería sobre la vista seleccionada
+  const totalIngresosReales = transaccionesFiltradas
     .filter((t) => t.importe > 0)
     .reduce((sum, t) => sum + t.importe, 0);
 
-  const totalGastosReales = transactions
+  const totalGastosReales = transaccionesFiltradas
     .filter((t) => t.importe < 0)
     .reduce((sum, t) => sum + Math.abs(t.importe), 0);
 
-  const gastoSuperReal = transactions
+  const gastoSuperReal = transaccionesFiltradas
     .filter((t) => t.categoria === 'supermercado' && t.importe < 0)
     .reduce((sum, t) => sum + Math.abs(t.importe), 0);
-
-  const fugasRealesDetectadas = transactions.filter((t) => t.esFugaDetectada);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,11 +71,12 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
     reader.onload = (event) => {
       const text = event.target?.result as string;
       if (text) {
-        const parsed = parseBankCSV(text);
+        const parsed = parseBankCSV(text, importTitular);
         if (parsed.length > 0) {
-          onImportTransactions(parsed);
+          onImportTransactions(parsed, importTitular);
+          setShowImportModal(false);
         } else {
-          alert('No se pudieron detectar movimientos en el archivo. Asegúrate de que sea un CSV o extracto de tu banco con columnas de fecha e importe.');
+          alert('No se pudieron detectar movimientos en el archivo. Asegúrate de que sea un extracto CSV de tu banco.');
         }
       }
     };
@@ -65,12 +89,16 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
     const num = parseFloat(importe);
     if (!num || !concepto) return;
 
+    const mes = fecha.substring(0, 7);
+
     onAddTransaction({
       id: 'tx_' + Date.now(),
       fecha,
       concepto,
-      importe: -Math.abs(num), // por defecto gasto
+      importe: -Math.abs(num),
       categoria,
+      titular: titularManual,
+      mes,
       esFugaDetectada: Math.abs(num) <= 7 && (concepto.toLowerCase().includes('cafe') || concepto.toLowerCase().includes('vending')),
     });
 
@@ -103,29 +131,22 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 text-white mb-1">
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Control Real de Tesorería
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Control Mensual Familiar y Tesorería
           </span>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Libro Diario de Movimientos Reales ({transactions.length})
+            Libro de Movimientos Bancarios ({transactions.length})
           </h2>
           <p className="text-xs text-slate-400">
-            Pasa de la teoría a la realidad: importa el extracto de tu banco o anota tus gastos para ver desvíos reales.
+            Une tu nómina y la de tu esposa, o separa por titular y mes a mes para ver el histórico de evolución.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept=".csv,.txt"
-            className="hidden"
-          />
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowImportModal(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
           >
-            <Upload className="w-3.5 h-3.5" /> Importar CSV de Banco
+            <Upload className="w-3.5 h-3.5" /> + Importar Extracto Bancario
           </button>
 
           <button
@@ -137,41 +158,131 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
         </div>
       </div>
 
+      {/* Selectores de Seguimiento Mes a Mes y Titular */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200/60 text-xs">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <span className="font-bold text-slate-700">Ver Seguimiento de:</span>
+
+          {/* Selector de Mes */}
+          <select
+            value={filtroMes}
+            onChange={(e) => setFiltroMes(e.target.value)}
+            className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none"
+          >
+            <option value="todos">Todos los meses (Global)</option>
+            {mesesDisponibles.map((m) => (
+              <option key={m} value={m}>
+                Mes: {m}
+              </option>
+            ))}
+          </select>
+
+          {/* Selector de Titular */}
+          <select
+            value={filtroTitular}
+            onChange={(e) => setFiltroTitular(e.target.value)}
+            className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none"
+          >
+            <option value="todos">Familia Completa (Conjunto)</option>
+            <option value="Mi Nómina / Yo">Solo Yo</option>
+            <option value="Mi Esposa">Solo Mi Esposa</option>
+            <option value="Cuenta Conjunta">Cuenta Conjunta</option>
+          </select>
+        </div>
+
+        <span className="text-[11px] text-slate-400">
+          Mostrando {transaccionesFiltradas.length} movimientos de {transactions.length} totales
+        </span>
+      </div>
+
       {/* Tarjetas de Control Real vs Presupuesto */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
-          <p className="text-xs text-slate-400 font-medium">Ingresos Reales Ingresados</p>
+          <p className="text-xs text-slate-400 font-medium">Ingresos Netos Reales (Nóminas)</p>
           <p className="text-xl font-bold text-slate-900 mt-1">+{totalIngresosReales.toFixed(2)} €</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
-          <p className="text-xs text-slate-400 font-medium">Gastos Reales Pagados</p>
+          <p className="text-xs text-slate-400 font-medium">Gastos Reales del Periodo</p>
           <p className="text-xl font-bold text-rose-600 mt-1">-{totalGastosReales.toFixed(2)} €</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400 font-medium">Consumo Supermercado</p>
-            <span className="text-[10px] font-bold text-slate-500">Tope: {supermercadoPresupuestado} €</span>
-          </div>
-          <p className="text-xl font-bold text-slate-900 mt-1">
-            {gastoSuperReal.toFixed(2)} €{' '}
-            <span className="text-xs font-semibold text-slate-400">
-              ({supermercadoPresupuestado > 0 ? Math.round((gastoSuperReal / supermercadoPresupuestado) * 100) : 0}%)
+            <p className="text-xs text-slate-400 font-medium">Ahorro Neto Real</p>
+            <span className="text-[10px] font-bold text-slate-500">
+              {totalIngresosReales > 0 ? Math.round(((totalIngresosReales - totalGastosReales) / totalIngresosReales) * 100) : 0}% tasa
             </span>
+          </div>
+          <p className={`text-xl font-bold mt-1 ${totalIngresosReales - totalGastosReales >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            +{(totalIngresosReales - totalGastosReales).toFixed(2)} €
           </p>
         </div>
       </div>
 
-      {/* Formulario rápido para anotar gasto */}
+      {/* Modal para importar extracto bancario preguntando de quién es */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Upload className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Importar Extracto Bancario</h3>
+                <p className="text-xs text-slate-400">¿De qué cuenta o titular es este extracto?</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Titular del extracto:</label>
+                <select
+                  value={importTitular}
+                  onChange={(e) => setImportTitular(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none"
+                >
+                  <option value="Mi Nómina / Yo">Mi Nómina / Cuenta Personal</option>
+                  <option value="Mi Esposa">Nómina / Cuenta de Mi Esposa</option>
+                  <option value="Cuenta Conjunta">Cuenta Conjunta Familiar</option>
+                </select>
+              </div>
+
+              <div className="p-4 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2">
+                <p className="text-xs text-slate-600 font-medium">Selecciona el archivo CSV de tu banco:</p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept=".csv,.txt"
+                  className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Formulario rápido para anotar gasto manual */}
       {showAddForm && (
         <form onSubmit={handleSubmit} className="p-5 bg-slate-50/90 border border-slate-200 rounded-2xl space-y-4 animate-in fade-in">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Registrar Nuevo Movimiento</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Registrar Movimiento Manual</h3>
             <button type="button" onClick={() => setShowAddForm(false)} className="text-xs text-slate-400 hover:text-slate-700">Cancelar</button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">Fecha</label>
               <input
@@ -226,6 +337,19 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
                 <option value="otros">Otros</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">Titular</label>
+              <select
+                value={titularManual}
+                onChange={(e) => setTitularManual(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none"
+              >
+                <option value="Yo">Yo</option>
+                <option value="Esposa">Esposa</option>
+                <option value="Cuenta Conjunta">Conjunta</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex justify-end">
@@ -240,11 +364,11 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
       )}
 
       {/* Tabla de Movimientos Reales */}
-      {transactions.length === 0 ? (
+      {transaccionesFiltradas.length === 0 ? (
         <div className="p-8 text-center bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl space-y-2">
-          <p className="text-sm font-semibold text-slate-700">Aún no hay movimientos reales registrados</p>
+          <p className="text-sm font-semibold text-slate-700">No hay movimientos en el periodo o titular seleccionado</p>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Puedes importar un archivo CSV descargado de tu banca online o pulsar en "+ Anotar Gasto" para registrar tus tickets diarios.
+            Puedes importar el extracto de tu cuenta o el de tu esposa pulsando en "+ Importar Extracto Bancario".
           </p>
         </div>
       ) : (
@@ -253,6 +377,7 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
             <thead className="bg-slate-50 text-slate-400 font-semibold uppercase tracking-wider text-[10px] border-b border-slate-100">
               <tr>
                 <th className="py-3 px-4">Fecha</th>
+                <th className="py-3 px-4">Titular</th>
                 <th className="py-3 px-4">Concepto</th>
                 <th className="py-3 px-4">Categoría</th>
                 <th className="py-3 px-4 text-right">Importe</th>
@@ -260,9 +385,14 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {transactions.slice(0, 15).map((tx) => (
+              {transaccionesFiltradas.slice(0, 25).map((tx) => (
                 <tr key={tx.id} className="hover:bg-slate-50/60 transition">
                   <td className="py-3 px-4 font-mono text-slate-500 whitespace-nowrap">{tx.fecha}</td>
+                  <td className="py-3 px-4 whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
+                      {tx.titular || 'General'}
+                    </span>
+                  </td>
                   <td className="py-3 px-4 font-semibold text-slate-900">
                     <div className="flex items-center gap-2">
                       <span>{tx.concepto}</span>
@@ -274,7 +404,7 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
                     </div>
                   </td>
                   <td className="py-3 px-4 text-slate-500">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 font-medium">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100 font-medium">
                       {getCategoryLabel(tx.categoria)}
                     </span>
                   </td>
