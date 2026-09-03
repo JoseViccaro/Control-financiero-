@@ -8,7 +8,9 @@ import { LeakSection } from './components/LeakSection';
 import { DebtEmergencySection } from './components/DebtEmergencySection';
 import { SmartGrocerySection } from './components/SmartGrocerySection';
 import { EditProfileModal } from './components/EditProfileModal';
-import { RotateCcw, ShieldCheck, ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, SlidersHorizontal } from 'lucide-react';
+import { AuthModal } from './components/AuthModal';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { RotateCcw, ShieldCheck, ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, SlidersHorizontal, Cloud, CloudCheck } from 'lucide-react';
 
 const INITIAL_PROFILE: UserFinancialProfile = {
   ingresosNetosMensuales: 2250,
@@ -46,6 +48,8 @@ const INITIAL_PROFILE: UserFinancialProfile = {
 
 export function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [perfil, setPerfil] = useState<UserFinancialProfile>(() => {
     const saved = localStorage.getItem('control_financiero_profile');
     if (saved) {
@@ -57,6 +61,60 @@ export function App() {
     }
     return INITIAL_PROFILE;
   });
+
+  // Cargar perfil desde Supabase si hay sesión
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+        loadCloudProfile(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+        loadCloudProfile(session.user.id);
+      } else {
+        setUserEmail(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadCloudProfile = async (userId: string) => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('profile_data')
+      .eq('user_id', userId)
+      .single();
+
+    if (data && data.profile_data) {
+      setPerfil(data.profile_data);
+    }
+  };
+
+  const saveProfileWithSync = async (updated: UserFinancialProfile) => {
+    setPerfil(updated);
+    localStorage.setItem('control_financiero_profile', JSON.stringify(updated));
+
+    if (supabase && userEmail) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('user_profiles').upsert(
+          {
+            user_id: user.id,
+            profile_data: updated,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        );
+      }
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('control_financiero_profile', JSON.stringify(perfil));
@@ -95,7 +153,16 @@ export function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         currentProfile={perfil}
-        onSave={(updated) => setPerfil(updated)}
+        onSave={saveProfileWithSync}
+      />
+
+      {/* Modal de Autenticación y Sincronización en la Nube */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        userEmail={userEmail}
+        onAuthSuccess={(email) => setUserEmail(email)}
+        onSignOut={() => setUserEmail(null)}
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-10">
@@ -122,6 +189,20 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            {/* Botón de Nube / Sincronización */}
+            <button
+              onClick={() => setIsAuthOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-semibold border transition cursor-pointer ${
+                userEmail
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 hover:bg-emerald-100'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+              title={userEmail ? `Sincronizado como ${userEmail}` : 'Iniciar sesión para sincronizar'}
+            >
+              <Cloud className={`w-4 h-4 ${userEmail ? 'text-emerald-600' : 'text-slate-400'}`} />
+              <span>{userEmail ? 'Sincronizado' : 'Sincronizar'}</span>
+            </button>
+
             <button
               onClick={() => setIsModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition shadow-md cursor-pointer"
@@ -136,9 +217,6 @@ export function App() {
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
-            <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-              <ShieldCheck className="w-3.5 h-3.5" /> 100% Privado
-            </div>
           </div>
         </header>
 
