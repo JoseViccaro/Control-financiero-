@@ -15,40 +15,34 @@ import { EditProfileModal } from './components/EditProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import type { FinancialTransaction } from '../../src/models/types';
+import { buildProfileFromTransactions } from '../../src/services/bankImportService';
 import { RotateCcw, ShieldCheck, ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, SlidersHorizontal, Cloud } from 'lucide-react';
 
 const INITIAL_PROFILE: UserFinancialProfile = {
-  ingresosNetosMensuales: 2250,
-  dineroDisponibleActual: 1800,
+  ingresosNetosMensuales: 0,
+  dineroDisponibleActual: 0,
   gastosFijos: {
-    vivienda: 650,
-    suministros: 90,
-    telefono: 35,
-    internet: 40,
-    seguros: 45,
-    transporte: 70,
+    vivienda: 0,
+    suministros: 0,
+    telefono: 0,
+    internet: 0,
+    seguros: 0,
+    transporte: 0,
     cuotas: 0,
   },
   gastosVariables: {
-    supermercado: 380,
-    ocio: 180,
-    comidasFuera: 120,
-    comprasOnline: 90,
-    otros: 50,
+    supermercado: 0,
+    ocio: 0,
+    comidasFuera: 0,
+    comprasOnline: 0,
+    otros: 0,
   },
-  deudas: [
-    { nombre: 'Tarjeta de Crédito', saldoPendiente: 1200, tipoInteres: 21.5, cuotaMensual: 90, fechaPago: '05' },
-    { nombre: 'Préstamo Coche', saldoPendiente: 4500, tipoInteres: 6.9, cuotaMensual: 145, fechaPago: '10' },
-  ],
-  fondoEmergenciaActual: 450,
-  objetivoAhorroMensual: 200,
+  deudas: [],
+  fondoEmergenciaActual: 0,
+  objetivoAhorroMensual: 0,
   proximosGastosExcepcionales: [],
-  fugasPresupuesto: [
-    { nombre: 'Café y snack diario de máquina', monto: 2.60, frecuencia: 'diario', categoria: 'hormiga' },
-    { nombre: 'Suscripción streaming en desuso', monto: 14.99, frecuencia: 'mensual', categoria: 'vampiro' },
-    { nombre: 'App fitness que no utilizo', monto: 89.00, frecuencia: 'anual', categoria: 'vampiro' },
-    { nombre: 'Comida a domicilio por impulso', monto: 25.00, frecuencia: 'semanal', categoria: 'prescindible' },
-  ],
+  fugasPresupuesto: [],
+  movimientosReales: [],
 };
 
 export function App() {
@@ -164,11 +158,10 @@ export function App() {
   };
 
   const handleImportTransactions = (txs: FinancialTransaction[]) => {
-    const updatedMovs = [...txs, ...(perfil.movimientosReales || [])];
-    saveProfileWithSync({
-      ...perfil,
-      movimientosReales: updatedMovs,
-    });
+    const allMovs = [...txs, ...(perfil.movimientosReales || [])];
+    // Reconstruir automáticamente el perfil con las categorías y números reales del extracto
+    const updatedProfile = buildProfileFromTransactions(allMovs, perfil);
+    saveProfileWithSync(updatedProfile);
   };
 
   const handleRemoveTransaction = (id: string) => {

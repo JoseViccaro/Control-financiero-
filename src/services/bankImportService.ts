@@ -1,4 +1,4 @@
-import { FinancialTransaction, TransactionCategory } from '../models/types.js';
+import { FinancialTransaction, TransactionCategory, UserFinancialProfile } from '../models/types.js';
 
 export function parseBankCSV(csvText: string): FinancialTransaction[] {
   const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -99,4 +99,122 @@ export function detectFugaInTransaction(concepto: string, importe: number): bool
     return true;
   }
   return false;
+}
+
+export function buildProfileFromTransactions(
+  transactions: FinancialTransaction[],
+  baseProfile?: Partial<UserFinancialProfile>
+): UserFinancialProfile {
+  let ingresosTotales = 0;
+  let vivienda = 0;
+  let suministros = 0;
+  let internet = 0;
+  let telefono = 0;
+  let seguros = 0;
+  let transporte = 0;
+  let cuotasDeuda = 0;
+
+  let supermercado = 0;
+  let ocio = 0;
+  let comidasFuera = 0;
+  let comprasOnline = 0;
+  let otros = 0;
+
+  const fugasMap = new Map<string, { nombre: string; monto: number; veces: number; categoria: 'hormiga' | 'vampiro' | 'prescindible' }>();
+
+  for (const t of transactions) {
+    const abs = Math.abs(t.importe);
+
+    if (t.importe > 0) {
+      ingresosTotales += t.importe;
+      continue;
+    }
+
+    // Clasificación según categoría detectada
+    switch (t.categoria) {
+      case 'vivienda':
+        vivienda += abs;
+        break;
+      case 'suministros':
+        suministros += abs;
+        break;
+      case 'transporte':
+        transporte += abs;
+        break;
+      case 'deuda':
+        cuotasDeuda += abs;
+        break;
+      case 'supermercado':
+        supermercado += abs;
+        break;
+      case 'ocio_restaurantes':
+        if (t.concepto.toLowerCase().includes('bar') || t.concepto.toLowerCase().includes('cafe') || t.concepto.toLowerCase().includes('restaurante') || t.concepto.toLowerCase().includes('glovo')) {
+          comidasFuera += abs;
+        } else {
+          ocio += abs;
+        }
+        break;
+      case 'compras':
+        comprasOnline += abs;
+        break;
+      case 'suscripciones':
+        otros += abs;
+        break;
+      default:
+        otros += abs;
+        break;
+    }
+
+    // Detección y acumulación de fugas
+    if (t.esFugaDetectada) {
+      const key = t.concepto.toLowerCase().trim();
+      const existing = fugasMap.get(key);
+      const isVampiro = t.categoria === 'suscripciones';
+      if (existing) {
+        existing.monto += abs;
+        existing.veces += 1;
+      } else {
+        fugasMap.set(key, {
+          nombre: t.concepto,
+          monto: abs,
+          veces: 1,
+          categoria: isVampiro ? 'vampiro' : 'hormiga'
+        });
+      }
+    }
+  }
+
+  const fugasPresupuesto = Array.from(fugasMap.values()).map(f => ({
+    nombre: f.nombre + (f.veces > 1 ? ' (' + f.veces + ' veces)' : ''),
+    monto: +(f.monto).toFixed(2),
+    frecuencia: (f.categoria === 'vampiro' ? 'mensual' : 'mensual') as any,
+    categoria: f.categoria
+  }));
+
+  return {
+    ingresosNetosMensuales: +(ingresosTotales).toFixed(2),
+    dineroDisponibleActual: baseProfile?.dineroDisponibleActual || 0,
+    gastosFijos: {
+      vivienda: +(vivienda).toFixed(2),
+      suministros: +(suministros).toFixed(2),
+      telefono: +(telefono).toFixed(2),
+      internet: +(internet).toFixed(2),
+      seguros: +(seguros).toFixed(2),
+      transporte: +(transporte).toFixed(2),
+      cuotas: +(cuotasDeuda).toFixed(2),
+    },
+    gastosVariables: {
+      supermercado: +(supermercado).toFixed(2),
+      ocio: +(ocio).toFixed(2),
+      comidasFuera: +(comidasFuera).toFixed(2),
+      comprasOnline: +(comprasOnline).toFixed(2),
+      otros: +(otros).toFixed(2),
+    },
+    deudas: baseProfile?.deudas || [],
+    fondoEmergenciaActual: baseProfile?.fondoEmergenciaActual || 0,
+    objetivoAhorroMensual: +(ingresosTotales * 0.2).toFixed(2),
+    proximosGastosExcepcionales: baseProfile?.proximosGastosExcepcionales || [],
+    fugasPresupuesto,
+    movimientosReales: transactions,
+  };
 }
