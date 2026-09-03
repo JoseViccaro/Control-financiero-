@@ -30,6 +30,18 @@ export function generateActionPlan(
     });
   }
 
+  // Si el perfil está completamente en blanco (sin ingresos ni gastos), no generar misiones vacías con 0 EUR
+  if (profile.ingresosNetosMensuales === 0 && summary.gastosFijosTotal === 0 && summary.gastosVariablesTotal === 0) {
+    return [
+      {
+        prioridad: 1,
+        impacto: 'ALTO',
+        titulo: 'Cargar o ingresar tus datos reales del mes',
+        descripcion: 'Importa tu extracto bancario en la sección de Tesorería o pulsa en "Meter Mis Datos" para que la app pueda analizar tus ingresos y gastos y recomendarte tu hoja de ruta.'
+      }
+    ];
+  }
+
   const meta300 = fundPlan.metas[0];
   if (meta300 && meta300.importeFalta > 0) {
     actions.push({
@@ -50,19 +62,23 @@ export function generateActionPlan(
     });
   }
 
-  actions.push({
-    prioridad: actions.length + 1,
-    impacto: 'MEDIO',
-    titulo: 'Configurar transferencia automatica de ahorro',
-    descripcion: 'Programa una transferencia automatica de ' + profile.objetivoAhorroMensual + ' EUR justo el dia posterior al cobro de tu nomina.'
-  });
+  if (profile.objetivoAhorroMensual > 0) {
+    actions.push({
+      prioridad: actions.length + 1,
+      impacto: 'MEDIO',
+      titulo: 'Configurar transferencia automatica de ahorro',
+      descripcion: 'Programa una transferencia automatica de ' + profile.objetivoAhorroMensual + ' EUR justo el dia posterior al cobro de tu nomina.'
+    });
+  }
 
-  actions.push({
-    prioridad: actions.length + 1,
-    impacto: 'MODERADO',
-    titulo: 'Comprar con lista cerrada y limite semanal',
-    descripcion: 'Establece un techo semanal en supermercado de ' + +(profile.gastosVariables.supermercado / 4.33).toFixed(2) + ' EUR y revisa la despensa antes de comprar.'
-  });
+  if (profile.gastosVariables.supermercado > 0) {
+    actions.push({
+      prioridad: actions.length + 1,
+      impacto: 'MODERADO',
+      titulo: 'Comprar con lista cerrada y limite semanal',
+      descripcion: 'Establece un techo semanal en supermercado de ' + +(profile.gastosVariables.supermercado / 4.33).toFixed(2) + ' EUR y revisa la despensa antes de comprar.'
+    });
+  }
 
   return actions.slice(0, 5);
 }
