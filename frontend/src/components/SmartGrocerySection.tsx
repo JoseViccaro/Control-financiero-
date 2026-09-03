@@ -146,19 +146,17 @@ export const SmartGrocerySection: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {productosEnCesta.length > 0 && (
-            <button
-              onClick={() => setModoSupermercado(!modoSupermercado)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition cursor-pointer border ${
-                modoSupermercado
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200/70'
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>{modoSupermercado ? 'Salir de Modo Súper' : 'Modo Supermercado'}</span>
-            </button>
-          )}
+          <button
+            onClick={() => setModoSupermercado(!modoSupermercado)}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition cursor-pointer border ${
+              modoSupermercado
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200/70'
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>{modoSupermercado ? 'Salir de Modo Súper' : '🛒 Modo Supermercado'}</span>
+          </button>
 
           <button
             onClick={() => setShowAddModal(true)}
@@ -231,58 +229,73 @@ export const SmartGrocerySection: React.FC = () => {
             </span>
           </div>
 
-          <div className="space-y-3">
-            {productosEnCesta.map((prod) => {
-              const isChecked = !!checkedInCart[prod.id];
-              return (
-                <div
-                  key={prod.id}
-                  onClick={() => toggleCartCheck(prod.id)}
-                  className={`p-4 rounded-2xl border transition flex items-center justify-between gap-4 cursor-pointer select-none active:scale-[0.99] ${
-                    isChecked
-                      ? 'bg-slate-100/70 border-slate-200 opacity-50 line-through'
-                      : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div
-                      className={`w-6 h-6 rounded-xl border flex items-center justify-center transition ${
-                        isChecked
-                          ? 'bg-emerald-600 border-emerald-600 text-white'
-                          : 'border-slate-300 bg-slate-50'
-                      }`}
-                    >
-                      {isChecked && <Check className="w-4 h-4 stroke-[3]" />}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-900">{prod.nombre}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {getSectionBadge(prod.seccion)}
-                        <span className="text-xs text-slate-400 font-medium">{prod.cantidad}</span>
+          {productosEnCesta.length === 0 ? (
+            <div className="p-8 bg-white border border-dashed border-slate-200 rounded-2xl text-center space-y-3">
+              <p className="text-sm font-bold text-slate-900">Aún no has marcado productos para esta compra</p>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Sal del Modo Supermercado y marca con un check los productos que vas a comprar hoy, o pulsa en "+ Añadir Producto".
+              </p>
+              <button
+                onClick={() => setModoSupermercado(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+              >
+                Ver Mi Catálogo de Productos
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {productosEnCesta.map((prod) => {
+                const isChecked = !!checkedInCart[prod.id];
+                return (
+                  <div
+                    key={prod.id}
+                    onClick={() => toggleCartCheck(prod.id)}
+                    className={`p-4 rounded-2xl border transition flex items-center justify-between gap-4 cursor-pointer select-none active:scale-[0.99] ${
+                      isChecked
+                        ? 'bg-slate-100/70 border-slate-200 opacity-50 line-through'
+                        : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className={`w-6 h-6 rounded-xl border flex items-center justify-center transition ${
+                          isChecked
+                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            : 'border-slate-300 bg-slate-50'
+                        }`}
+                      >
+                        {isChecked && <Check className="w-4 h-4 stroke-[3]" />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-slate-900">{prod.nombre}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {getSectionBadge(prod.seccion)}
+                          <span className="text-xs text-slate-400 font-medium">{prod.cantidad}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="text-right flex items-center gap-2">
-                    <span className="text-base font-extrabold font-mono text-slate-900">
-                      {prod.precioUltimaCompra > 0 ? `${prod.precioUltimaCompra.toFixed(2)} €` : 'Sin precio'}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingProduct(prod);
-                        setEditPrecio(prod.precioUltimaCompra ? prod.precioUltimaCompra.toString() : '');
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-slate-800 transition"
-                      title="Editar precio real pagado"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="text-right flex items-center gap-2">
+                      <span className="text-base font-extrabold font-mono text-slate-900">
+                        {prod.precioUltimaCompra > 0 ? `${prod.precioUltimaCompra.toFixed(2)} €` : 'Sin precio'}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProduct(prod);
+                          setEditPrecio(prod.precioUltimaCompra ? prod.precioUltimaCompra.toString() : '');
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-slate-800 transition"
+                        title="Editar precio real pagado"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : (
         /* VISTA DE GESTIÓN Y PLANIFICACIÓN DE PRODUCTOS REALES */
