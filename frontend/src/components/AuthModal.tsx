@@ -8,6 +8,10 @@ interface AuthModalProps {
   userEmail: string | null;
   onAuthSuccess: (email: string) => void;
   onSignOut: () => void;
+  onForceUpload?: () => void;
+  onForceDownload?: () => void;
+  syncStatus?: 'idle' | 'saving' | 'saved' | 'error';
+  syncError?: string | null;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -16,6 +20,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   userEmail,
   onAuthSuccess,
   onSignOut,
+  onForceUpload,
+  onForceDownload,
+  syncStatus,
+  syncError,
 }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
@@ -95,12 +103,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-sm font-bold text-slate-900">{userEmail}</p>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 transition cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" /> Cerrar Sesión en este Dispositivo
-            </button>
+            {syncError && (
+              <div className="p-3 bg-rose-50 border border-rose-200/80 rounded-xl text-xs text-rose-700 font-medium">
+                {syncError}
+              </div>
+            )}
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <p className="text-xs font-bold text-slate-700">Acciones de Sincronización:</p>
+              
+              <button
+                type="button"
+                onClick={onForceUpload}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition shadow-sm cursor-pointer"
+              >
+                <Cloud className="w-4 h-4 text-emerald-400" />
+                Subir datos de este dispositivo a la nube
+              </button>
+
+              <button
+                type="button"
+                onClick={onForceDownload}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+              >
+                Descargar datos guardados en la nube
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" /> Cerrar Sesión en este Dispositivo
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleAuth} className="space-y-4">

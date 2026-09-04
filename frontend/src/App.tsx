@@ -98,9 +98,13 @@ export function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [syncError, setSyncError] = useState<string | null>(null);
+
   const loadCloudProfile = async (userId: string) => {
     if (!supabase) return;
     try {
+      setSyncStatus('saving');
       const { data, error } = await supabase
         .from('user_profiles')
         .select('profile_data')
@@ -108,8 +112,13 @@ export function App() {
         .single();
 
       if (error) {
-        console.warn('Error loading cloud profile:', error.message);
-        return;
+        // Código PGRST116 significa que la fila aún no existe en la tabla (usuario nuevo)
+        if (error.code !== 'PGRST116') {
+          console.warn('Error loading cloud profile:', error.message);
+          setSyncError(`Error cargando de la nube: ${error.message}`);
+          setSyncStatus('error');
+          return;
+        }
       }
 
       if (data && data.profile_data) {
@@ -117,9 +126,50 @@ export function App() {
         try {
           localStorage.setItem('cf_local_profile_v1', JSON.stringify(data.profile_data));
         } catch (e) {}
+        setSyncStatus('saved');
+      } else {
+        setSyncStatus('idle');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load cloud profile:', err);
+      setSyncError(err?.message || 'Error de conexión');
+      setSyncStatus('error');
+    }
+  };
+
+  const uploadProfileToCloud = async (currentData?: UserFinancialProfile) => {
+    if (!supabase) return;
+    try {
+      setSyncStatus('saving');
+      setSyncError(null);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setSyncStatus('error');
+        setSyncError('No hay sesión iniciada en Supabase');
+        return;
+      }
+
+      const toSave = currentData || perfil;
+      const { error } = await supabase.from('user_profiles').upsert(
+        {
+          user_id: user.id,
+          profile_data: toSave,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
+
+      if (error) {
+        console.error('Error al subir a la nube:', error);
+        setSyncError(error.message);
+        setSyncStatus('error');
+        alert(`Error al guardar en la nube: ${error.message}. Por favor revisa los permisos de Supabase.`);
+      } else {
+        setSyncStatus('saved');
+      }
+    } catch (e: any) {
+      setSyncError(e?.message || 'Error inesperado');
+      setSyncStatus('error');
     }
   };
 
@@ -129,19 +179,7 @@ export function App() {
       localStorage.setItem('cf_local_profile_v1', JSON.stringify(updated));
     } catch (e) {}
 
-    if (supabase) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('user_profiles').upsert(
-          {
-            user_id: user.id,
-            profile_data: updated,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id' }
-        );
-      }
-    }
+    await uploadProfileToCloud(updated);
   };
 
   // Cálculos en tiempo real utilizando directamente el motor TypeScript
@@ -273,27 +311,45 @@ export function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         userEmail={userEmail}
+        syncStatus={syncStatus}
+        syncError={syncError}
+        onForceUpload={async () => {
+          await uploadProfileToCloud(perfil);
+          alert('¡Datos de este dispositivo subidos y guardados con éxito en la nube!');
+        }}
+        onForceDownload={async () => {
+          if (supabase) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await loadCloudProfile(user.id);
+              alert('¡Datos de la nube descargados y aplicados en este dispositivo!');
+            }
+          }
+        }}
         onAuthSuccess={async (email) => {
           setUserEmail(email);
           if (supabase) {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-              // Primero intentar cargar el perfil en la nube
               const { data } = await supabase.from('user_profiles').select('profile_data').eq('user_id', user.id).single();
               if (data && data.profile_data) {
                 setPerfil(data.profile_data);
+                try {
+                  localStorage.setItem('cf_local_profile_v1', JSON.stringify(data.profile_data));
+                } catch (e) {}
               } else {
-                // Si es su primera vez en la nube, subir lo que tiene en pantalla a su nube
-                await supabase.from('user_profiles').upsert({
-                  user_id: user.id,
-                  profile_data: perfil,
-                  updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
+                await uploadProfileToCloud(perfil);
               }
             }
           }
         }}
-        onSignOut={() => setUserEmail(null)}
+        onSignOut={() => {
+          setUserEmail(null);
+          setPerfil(INITIAL_PROFILE);
+          try {
+            localStorage.removeItem('cf_local_profile_v1');
+          } catch (e) {}
+        }}
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-10">
