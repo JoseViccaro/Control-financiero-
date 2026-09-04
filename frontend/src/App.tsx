@@ -150,20 +150,42 @@ export function App() {
       }
 
       const toSave = currentData || perfil;
-      const { error } = await supabase.from('user_profiles').upsert(
-        {
-          user_id: user.id,
-          profile_data: toSave,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' }
-      );
 
-      if (error) {
-        console.error('Error al subir a la nube:', error);
-        setSyncError(error.message);
+      // Consultar si ya existe un registro para este user_id
+      const { data: existingRows } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id);
+
+      let saveError = null;
+
+      if (existingRows && existingRows.length > 0) {
+        // Ya existe: hacer UPDATE
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            profile_data: toSave,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id);
+        saveError = error;
+      } else {
+        // No existe: hacer INSERT
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            profile_data: toSave,
+            updated_at: new Date().toISOString(),
+          });
+        saveError = error;
+      }
+
+      if (saveError) {
+        console.error('Error al subir a la nube:', saveError);
+        setSyncError(saveError.message);
         setSyncStatus('error');
-        alert(`Error al guardar en la nube: ${error.message}. Por favor revisa los permisos de Supabase.`);
+        alert(`Error al guardar en la nube: ${saveError.message}`);
       } else {
         setSyncStatus('saved');
       }
