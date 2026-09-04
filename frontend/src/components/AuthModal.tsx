@@ -38,6 +38,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         if (data.user) {
+          if (data.session) {
+            onAuthSuccess(data.user.email || email);
+            onClose();
+            return;
+          }
           setSuccessMsg('¡Cuenta creada con éxito! Ya puedes iniciar sesión.');
           setIsRegister(false);
         }
