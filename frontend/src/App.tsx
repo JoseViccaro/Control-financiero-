@@ -52,9 +52,21 @@ export function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [perfil, setPerfil] = useState<UserFinancialProfile>(INITIAL_PROFILE);
 
-  // Limpiar cualquier residuo previo de localStorage
+  // Limpiar cualquier residuo previo de localStorage y caché antigua
   useEffect(() => {
     localStorage.removeItem('control_financiero_profile');
+    localStorage.removeItem('control_financiero_real_grocery_list');
+    localStorage.removeItem('control_financiero_grocery_budget');
+    localStorage.removeItem('grocery_products');
+    
+    // Desregistrar cualquier Service Worker antiguo que Safari pudiera tener retenido
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
   }, []);
 
   // Cargar perfil desde Supabase si hay sesión activa
@@ -241,9 +253,14 @@ export function App() {
                   Tu Salud Financiera
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                Control Financiero
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                  Control Financiero
+                </h1>
+                <span className="text-[10px] font-bold bg-slate-900 text-white px-2 py-0.5 rounded-full">
+                  v2.2
+                </span>
+              </div>
             </div>
           </div>
 
