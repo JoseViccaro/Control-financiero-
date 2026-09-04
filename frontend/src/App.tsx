@@ -241,7 +241,26 @@ export function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         userEmail={userEmail}
-        onAuthSuccess={(email) => setUserEmail(email)}
+        onAuthSuccess={async (email) => {
+          setUserEmail(email);
+          if (supabase) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              // Primero intentar cargar el perfil en la nube
+              const { data } = await supabase.from('user_profiles').select('profile_data').eq('user_id', user.id).single();
+              if (data && data.profile_data) {
+                setPerfil(data.profile_data);
+              } else {
+                // Si es su primera vez en la nube, subir lo que tiene en pantalla a su nube
+                await supabase.from('user_profiles').upsert({
+                  user_id: user.id,
+                  profile_data: perfil,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+              }
+            }
+          }
+        }}
         onSignOut={() => setUserEmail(null)}
       />
 
