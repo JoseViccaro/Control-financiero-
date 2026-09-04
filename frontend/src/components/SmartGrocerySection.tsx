@@ -305,9 +305,9 @@ export const SmartGrocerySection: React.FC = () => {
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                 <ShoppingCart className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Tu lista está 100% limpia y sin datos inventados</h3>
+              <h3 className="text-base font-bold text-slate-900">Lista de la Compra Habitual</h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Añade los productos que sueles comprar habitualmente en tu supermercado habitual. Conforme vayas metiendo su precio, la app lo memorizará para siempre.
+                Añade los productos que soléis comprar en vuestro hogar para planificar la compra semanal y no salir del presupuesto de alimentación.
               </p>
               <button
                 onClick={() => setShowAddModal(true)}

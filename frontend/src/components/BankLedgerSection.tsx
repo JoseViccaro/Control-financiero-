@@ -140,6 +140,7 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
       compras: 'Compras',
       transporte: 'Transporte',
       salud: 'Salud',
+      seguros: 'Seguros',
       deuda: 'Pago Deuda',
       suscripciones: 'Suscripciones',
       otros: 'Varios',
@@ -149,9 +150,10 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
 
   const CATEGORIAS_DISPONIBLES: { id: TransactionCategory; label: string }[] = [
     { id: 'supermercado', label: 'Supermercado' },
-    { id: 'vivienda', label: 'Vivienda / Alquiler' },
+    { id: 'vivienda', label: 'Vivienda / Alquiler / Hipoteca' },
+    { id: 'seguros', label: 'Seguros (Hogar, Vida, etc.)' },
     { id: 'suministros', label: 'Suministros (Luz, Agua, etc.)' },
-    { id: 'deuda', label: 'Pago Deuda / Tarjetas' },
+    { id: 'deuda', label: 'Pago Deuda / Tarjetas / Préstamos' },
     { id: 'ocio_restaurantes', label: 'Ocio / Restaurantes' },
     { id: 'compras', label: 'Compras' },
     { id: 'transporte', label: 'Transporte / Gasolina' },

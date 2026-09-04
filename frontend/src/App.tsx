@@ -11,6 +11,7 @@ import { SmartGrocerySection } from './components/SmartGrocerySection';
 import { HealthCheckSection } from './components/HealthCheckSection';
 import { ActionPlanSection } from './components/ActionPlanSection';
 import { BankLedgerSection } from './components/BankLedgerSection';
+import { FixedObligationsSection } from './components/FixedObligationsSection';
 import { EditProfileModal } from './components/EditProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -379,6 +380,14 @@ export function App() {
             gastosNecesidades={gastosNecesidades}
             gastosDeseos={gastosDeseos}
             ahorroYDeudas={ahorroYDeudas}
+          />
+        </section>
+
+        {/* Sección: Obligaciones Fijas (Hipotecas, Seguros, Préstamos y Suministros) */}
+        <section>
+          <FixedObligationsSection
+            profile={perfil}
+            transactions={perfil.movimientosReales || []}
           />
         </section>
 

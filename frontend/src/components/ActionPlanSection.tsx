@@ -37,13 +37,13 @@ export const ActionPlanSection: React.FC<ActionPlanSectionProps> = ({ items }) =
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 mb-1">
-            <Target className="w-3.5 h-3.5 text-emerald-600" /> Plan de Acción
+            <Target className="w-3.5 h-3.5 text-emerald-600" /> Hoja de Ruta Financiera
           </span>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Misiones Financieras del Mes ({items.length})
+            Tu Ruta de Organización Financiera ({items.length} pasos clave)
           </h2>
-          <p className="text-xs text-slate-400">
-            Tus pasos concretos ordenados por urgencia matemática para sanar y hacer crecer tu dinero.
+          <p className="text-xs text-slate-500">
+            La secuencia exacta de pasos que debes seguir hoy para tomar el control, tapar fugas, pagar deudas y construir tu ahorro.
           </p>
         </div>
 

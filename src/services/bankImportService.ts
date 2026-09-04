@@ -80,28 +80,36 @@ export function autoCategorizeConcepto(concepto: string): TransactionCategory {
   if (c.includes('nomina') || c.includes('salario') || c.includes('haber') || c.includes('transferencia recibida') || c.includes('transfer inmediata')) {
     return 'nomina';
   }
-  if (c.includes('alquiler') || c.includes('hipoteca') || c.includes('comunidad') || c.includes('oficina virtual g')) {
+  // Vivienda: Hipoteca, alquiler, comunidad
+  if (c.includes('hipoteca') || c.includes('alquiler') || c.includes('comunidad') || c.includes('oficina virtual g')) {
     return 'vivienda';
   }
-  if (c.includes('mercadona') || c.includes('carrefour') || c.includes('lidl') || c.includes('dia') || c.includes('supermercado') || c.includes('alcampo') || c.includes('eroski') || c.includes('ahorramas') || c.includes('supeco')) {
-    return 'supermercado';
+  // Seguros: Vida, hogar, salud, coche, mutua, mapfre, axa, sanitas, adeslas
+  if (c.includes('seguro') || c.includes('mapfre') || c.includes('axa') || c.includes('allianz') || c.includes('mutua') || c.includes('sanitas') || c.includes('adeslas') || c.includes('asisa') || c.includes('santander seguros') || c.includes('ocaso') || c.includes('santa lucia') || c.includes('linea directa') || c.includes('zurich')) {
+    return 'seguros';
   }
-  if (c.includes('restaurante') || c.includes('bar') || c.includes('cafe') || c.includes('mcdonald') || c.includes('burger') || c.includes('glovo') || c.includes('uber eats') || c.includes('just eat') || c.includes('kfc') || c.includes('marmar')) {
-    return 'ocio_restaurantes';
-  }
-  if (c.includes('netflix') || c.includes('spotify') || c.includes('amazon prime') || c.includes('disney') || c.includes('hbo') || c.includes('apple') || c.includes('suscripcion') || c.includes('apple.com/bill')) {
-    return 'suscripciones';
-  }
-  if (c.includes('gasolina') || c.includes('repsol') || c.includes('cepsa') || c.includes('metro') || c.includes('renfe') || c.includes('uber') || c.includes('cabify') || c.includes('crtm') || c.includes('movili')) {
+  // Transporte y carburante (antes de suministros para que gasolinera no coincida con 'gas')
+  if (c.includes('gasolina') || c.includes('gasolinera') || c.includes('repsol') || c.includes('cepsa') || c.includes('bp') || c.includes('galp') || c.includes('metro') || c.includes('renfe') || c.includes('uber') || c.includes('cabify') || c.includes('crtm') || c.includes('movili')) {
     return 'transporte';
   }
-  if (c.includes('luz') || c.includes('agua') || c.includes('iberdrola') || c.includes('endesa') || c.includes('naturgy') || c.includes('vodafone') || c.includes('movistar') || c.includes('orange') || c.includes('digi') || c.includes('mybox')) {
+  // Suministros: Luz, agua, gas natural, internet, telefonía
+  if (c.includes('luz') || c.includes('agua') || (/\bgas\b/.test(c) || c.includes('gas natural') || c.includes('butano')) || c.includes('iberdrola') || c.includes('endesa') || c.includes('naturgy') || c.includes('vodafone') || c.includes('movistar') || c.includes('orange') || c.includes('digi') || c.includes('mybox') || c.includes('totalenergies') || c.includes('repsol luz') || c.includes('holaluz')) {
     return 'suministros';
   }
-  if (c.includes('prestamo') || c.includes('tarjeta') || c.includes('credito') || c.includes('financiera') || c.includes('cetelem') || c.includes('visa &go') || c.includes('mycard') || c.includes('pres.')) {
+  // Préstamos, Tarjetas de Crédito, Financieras
+  if (c.includes('prestamo') || c.includes('préstamo') || c.includes('tarjeta') || c.includes('credito') || c.includes('crédito') || c.includes('financiera') || c.includes('cetelem') || c.includes('cofidis') || c.includes('visa &go') || c.includes('mycard') || c.includes('pres.') || c.includes('santander consumer') || c.includes('bbva consumer') || c.includes('creditea') || c.includes('wizink')) {
     return 'deuda';
   }
-  if (c.includes('zara') || c.includes('amazon') || c.includes('aliexpress') || c.includes('shein') || c.includes('tienda') || c.includes('decimas')) {
+  if (c.includes('mercadona') || c.includes('carrefour') || c.includes('lidl') || c.includes('dia') || c.includes('supermercado') || c.includes('alcampo') || c.includes('eroski') || c.includes('ahorramas') || c.includes('supeco') || c.includes('fruteria') || c.includes('carniceria') || c.includes('panaderia') || c.includes('pescaderia')) {
+    return 'supermercado';
+  }
+  if (c.includes('restaurante') || c.includes('bar') || c.includes('cafe') || c.includes('mcdonald') || c.includes('burger') || c.includes('glovo') || c.includes('uber eats') || c.includes('just eat') || c.includes('kfc') || c.includes('marmar') || c.includes('pizzeria') || c.includes('cerveceria')) {
+    return 'ocio_restaurantes';
+  }
+  if (c.includes('netflix') || c.includes('spotify') || c.includes('amazon prime') || c.includes('disney') || c.includes('hbo') || c.includes('apple') || c.includes('suscripcion') || c.includes('apple.com/bill') || c.includes('youtube')) {
+    return 'suscripciones';
+  }
+  if (c.includes('zara') || c.includes('amazon') || c.includes('aliexpress') || c.includes('shein') || c.includes('tienda') || c.includes('decimas') || c.includes('primark') || c.includes('mango')) {
     return 'compras';
   }
 
@@ -163,6 +171,9 @@ export function buildProfileFromTransactions(
       case 'vivienda':
         vivienda += abs;
         break;
+      case 'seguros':
+        seguros += abs;
+        break;
       case 'suministros':
         suministros += abs;
         break;
@@ -212,6 +223,43 @@ export function buildProfileFromTransactions(
     }
   }
 
+  // Detección automática de préstamos y tarjetas desde las transacciones
+  const deudasDetectadasMap = new Map<string, { cuota: number; fecha: string }>();
+  for (const t of transactions) {
+    if (t.categoria === 'deuda' && t.importe < 0) {
+      const key = t.concepto.trim();
+      const abs = Math.abs(t.importe);
+      const existing = deudasDetectadasMap.get(key);
+      if (!existing || abs > existing.cuota) {
+        deudasDetectadasMap.set(key, { cuota: abs, fecha: t.fecha ? t.fecha.substring(8, 10) : '05' });
+      }
+    }
+  }
+
+  const deudasAutoDetectadas: DebtItem[] = Array.from(deudasDetectadasMap.entries()).map(([nombre, info]) => {
+    // Si ya existe una deuda configurada a mano por el usuario con saldo pendiente, preservarla
+    const manual = baseProfile?.deudas?.find(d => d.nombre.toLowerCase() === nombre.toLowerCase());
+    if (manual) return manual;
+
+    const lower = nombre.toLowerCase();
+    const isTarjeta = lower.includes('tarjeta') || lower.includes('mycard') || lower.includes('&go') || lower.includes('wizink') || lower.includes('credito');
+    const taeEstimada = isTarjeta ? 19.9 : 8.5; // TAE orientativa de mercado en España
+
+    return {
+      nombre,
+      cuotaMensual: +info.cuota.toFixed(2),
+      saldoPendiente: +(info.cuota * (isTarjeta ? 3 : 24)).toFixed(2), // Estimación base para la estrategia si no se conoce el saldo total
+      tipoInteres: taeEstimada,
+      fechaPago: `Día ${info.fecha}`,
+    };
+  });
+
+  const deudasFinales = baseProfile?.deudas && baseProfile.deudas.length > 0 && deudasAutoDetectadas.length === 0
+    ? baseProfile.deudas
+    : deudasAutoDetectadas.length > 0
+      ? deudasAutoDetectadas
+      : (baseProfile?.deudas || []);
+
   const fugasPresupuesto = Array.from(fugasMap.values()).map(f => ({
     nombre: f.nombre + (f.veces > 1 ? ' (' + f.veces + ' veces)' : ''),
     monto: +(f.monto).toFixed(2),
@@ -238,7 +286,7 @@ export function buildProfileFromTransactions(
       comprasOnline: +(comprasOnline).toFixed(2),
       otros: +(otros).toFixed(2),
     },
-    deudas: baseProfile?.deudas || [],
+    deudas: deudasFinales,
     fondoEmergenciaActual: baseProfile?.fondoEmergenciaActual || 0,
     objetivoAhorroMensual: +(ingresosTotales * 0.2).toFixed(2),
     proximosGastosExcepcionales: baseProfile?.proximosGastosExcepcionales || [],

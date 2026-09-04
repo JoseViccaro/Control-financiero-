@@ -185,6 +185,7 @@ export type TransactionCategory =
   | 'compras'
   | 'transporte'
   | 'salud'
+  | 'seguros'
   | 'deuda'
   | 'suscripciones'
   | 'otros';
