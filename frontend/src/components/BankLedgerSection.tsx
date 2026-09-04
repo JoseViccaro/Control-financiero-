@@ -56,13 +56,13 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
     return cumpleMes && cumpleTitular;
   });
 
-  // Cálculos reales de tesorería sobre la vista seleccionada
+  // Cálculos reales de tesorería sobre la vista seleccionada (excluyendo traspasos internos entre cuentas)
   const totalIngresosReales = transaccionesFiltradas
-    .filter((t) => t.importe > 0)
+    .filter((t) => t.categoria !== 'transferencia_interna' && t.importe > 0 && (t.categoria === 'nomina' || Math.abs(t.importe) >= 300))
     .reduce((sum, t) => sum + t.importe, 0);
 
   const totalGastosReales = transaccionesFiltradas
-    .filter((t) => t.importe < 0)
+    .filter((t) => t.categoria !== 'transferencia_interna' && t.importe < 0)
     .reduce((sum, t) => sum + Math.abs(t.importe), 0);
 
   const gastoSuperReal = transaccionesFiltradas
