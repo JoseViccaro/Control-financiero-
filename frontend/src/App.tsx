@@ -186,6 +186,13 @@ export function App() {
     saveProfileWithSync(updatedProfile);
   };
 
+  const handleUpdateGroceryProducts = (items: any[]) => {
+    saveProfileWithSync({
+      ...perfil,
+      customGroceryProducts: items
+    });
+  };
+
   const handleRemoveTransaction = (id: string) => {
     const updatedMovs = (perfil.movimientosReales || []).filter((t) => t.id !== id);
     const updatedProfile = buildProfileFromTransactions(updatedMovs, perfil);
@@ -425,7 +432,11 @@ export function App() {
 
         {/* Sección: Compra Inteligente de Supermercado */}
         <section>
-          <SmartGrocerySection />
+          <SmartGrocerySection
+            products={perfil.customGroceryProducts || []}
+            onUpdateProducts={handleUpdateGroceryProducts}
+            gastoSupermercadoRealMes={perfil.gastosVariables.supermercado}
+          />
         </section>
 
         <footer className="text-center pt-8 border-t border-slate-200/60 text-xs text-slate-400">

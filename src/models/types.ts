@@ -202,6 +202,15 @@ export interface FinancialTransaction {
   esFugaDetectada?: boolean;
 }
 
+export interface CustomGroceryItem {
+  id: string;
+  nombre: string;
+  seccion: 'fruta y verdura' | 'proteínas' | 'despensa' | 'lácteos' | 'congelados' | 'limpieza' | 'otros';
+  precioUltimaCompra: number;
+  cantidad: string;
+  incluirEnCesta: boolean;
+}
+
 export interface UserFinancialProfile {
   ingresosNetosMensuales: number;
   dineroDisponibleActual: number;
@@ -215,4 +224,5 @@ export interface UserFinancialProfile {
   fugasPresupuesto?: MoneyLeakInput[];
   cuentasBancarias?: BankAccount[];
   movimientosReales?: FinancialTransaction[];
+  customGroceryProducts?: CustomGroceryItem[];
 }

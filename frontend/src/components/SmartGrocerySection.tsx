@@ -20,36 +20,37 @@ export interface UserCustomGroceryProduct {
   incluirEnCesta: boolean; // Si está activo para la compra de esta semana
 }
 
-// Productos habituales pre-configurados para añadir con un solo toque
-const SUGERENCIAS_RAPIDAS: Array<{ nombre: string; seccion: UserCustomGroceryProduct['seccion']; precio: number; cantidad: string }> = [
-  { nombre: 'Leche (Pack 6)', seccion: 'lácteos', precio: 5.40, cantidad: '6 briks' },
-  { nombre: 'Huevos L (Docena)', seccion: 'proteínas', precio: 2.60, cantidad: '12 uds' },
-  { nombre: 'Pechuga de pollo', seccion: 'proteínas', precio: 6.50, cantidad: '1 bandeja' },
-  { nombre: 'Plátanos de Canarias', seccion: 'fruta y verdura', precio: 2.20, cantidad: '1 kg' },
-  { nombre: 'Manzanas', seccion: 'fruta y verdura', precio: 2.10, cantidad: '1 kg' },
-  { nombre: 'Tomates ensalada', seccion: 'fruta y verdura', precio: 2.40, cantidad: '1 kg' },
-  { nombre: 'Arroz redondo', seccion: 'despensa', precio: 1.35, cantidad: '1 kg' },
-  { nombre: 'Pasta / Espaguetis', seccion: 'despensa', precio: 1.25, cantidad: '500g' },
-  { nombre: 'Aceite de oliva virgen', seccion: 'despensa', precio: 8.90, cantidad: '1 L' },
-  { nombre: 'Yogures naturales', seccion: 'lácteos', precio: 1.80, cantidad: 'Pack 4' },
-  { nombre: 'Pan de molde', seccion: 'despensa', precio: 1.45, cantidad: '1 paquete' },
-  { nombre: 'Detergente lavadora', seccion: 'limpieza', precio: 4.90, cantidad: '1 botella' },
-  { nombre: 'Papel higiénico', seccion: 'limpieza', precio: 3.80, cantidad: 'Pack 12' },
-  { nombre: 'Café molido', seccion: 'despensa', precio: 3.20, cantidad: '250g' }
-];
+interface SmartGrocerySectionProps {
+  products?: UserCustomGroceryProduct[];
+  onUpdateProducts?: (items: UserCustomGroceryProduct[]) => void;
+  gastoSupermercadoRealMes?: number;
+}
 
-export const SmartGrocerySection: React.FC = () => {
-  // Lista de productos en memoria
-  const [productos, setProductos] = useState<UserCustomGroceryProduct[]>([
-    { id: 'p_1', nombre: 'Leche (Pack 6)', seccion: 'lácteos', precioUltimaCompra: 5.40, cantidad: '6 briks', incluirEnCesta: true },
-    { id: 'p_2', nombre: 'Huevos L', seccion: 'proteínas', precioUltimaCompra: 2.60, cantidad: '12 uds', incluirEnCesta: true },
-    { id: 'p_3', nombre: 'Pechuga de pollo', seccion: 'proteínas', precioUltimaCompra: 6.50, cantidad: '1 bandeja', incluirEnCesta: true },
-    { id: 'p_4', nombre: 'Plátanos', seccion: 'fruta y verdura', precioUltimaCompra: 2.20, cantidad: '1 kg', incluirEnCesta: true },
-    { id: 'p_5', nombre: 'Aceite de Oliva', seccion: 'despensa', precioUltimaCompra: 8.90, cantidad: '1 L', incluirEnCesta: false },
-    { id: 'p_6', nombre: 'Detergente', seccion: 'limpieza', precioUltimaCompra: 4.90, cantidad: '1 ud', incluirEnCesta: false },
-  ]);
+export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
+  products = [],
+  onUpdateProducts,
+  gastoSupermercadoRealMes = 0,
+}) => {
+  // Lista de productos 100% personalizada por el usuario (sin datos genéricos inventados)
+  const [productos, setProductos] = useState<UserCustomGroceryProduct[]>(products);
 
-  const [presupuestoTope, setPresupuestoTope] = useState<number>(85);
+  // Mantener sincronizado si cambian las props externas
+  React.useEffect(() => {
+    if (products) {
+      setProductos(products);
+    }
+  }, [products]);
+
+  const updateAndSync = (newProds: UserCustomGroceryProduct[]) => {
+    setProductos(newProds);
+    if (onUpdateProducts) {
+      onUpdateProducts(newProds);
+    }
+  };
+
+  // Presupuesto tope por compra/semana (si hay gasto bancario real, se divide entre ~4.33 semanas)
+  const defaultTope = gastoSupermercadoRealMes > 0 ? Math.round(gastoSupermercadoRealMes / 4.33) : 90;
+  const [presupuestoTope, setPresupuestoTope] = useState<number>(defaultTope);
 
   // Estados de control y compra activa
   const [modoSupermercado, setModoSupermercado] = useState(false);
@@ -58,6 +59,7 @@ export const SmartGrocerySection: React.FC = () => {
   // Input rápido
   const [quickInputNombre, setQuickInputNombre] = useState('');
   const [quickInputPrecio, setQuickInputPrecio] = useState('');
+  const [quickInputSeccion, setQuickInputSeccion] = useState<UserCustomGroceryProduct['seccion']>('despensa');
 
   // Modal para actualizar precio en caliente
   const [editingProduct, setEditingProduct] = useState<UserCustomGroceryProduct | null>(null);
@@ -65,7 +67,8 @@ export const SmartGrocerySection: React.FC = () => {
 
   // Marcar / desmarcar si entra a la compra semanal
   const toggleIncludeInBasket = (id: string) => {
-    setProductos(prev => prev.map(p => p.id === id ? { ...p, incluirEnCesta: !p.incluirEnCesta } : p));
+    const updated = productos.map(p => p.id === id ? { ...p, incluirEnCesta: !p.incluirEnCesta } : p);
+    updateAndSync(updated);
   };
 
   // Marcar / desmarcar mientras estás en el supermercado
@@ -92,33 +95,15 @@ export const SmartGrocerySection: React.FC = () => {
     const nuevo: UserCustomGroceryProduct = {
       id: 'prod_' + Date.now(),
       nombre: quickInputNombre.trim(),
-      seccion: 'despensa',
+      seccion: quickInputSeccion,
       precioUltimaCompra: precioNum,
       cantidad: '1 ud',
       incluirEnCesta: true,
     };
 
-    setProductos([nuevo, ...productos]);
+    updateAndSync([nuevo, ...productos]);
     setQuickInputNombre('');
     setQuickInputPrecio('');
-  };
-
-  const handleAddSugerencia = (sug: typeof SUGERENCIAS_RAPIDAS[0]) => {
-    const existe = productos.find(p => p.nombre.toLowerCase() === sug.nombre.toLowerCase());
-    if (existe) {
-      toggleIncludeInBasket(existe.id);
-      return;
-    }
-
-    const nuevo: UserCustomGroceryProduct = {
-      id: 'prod_' + Date.now() + Math.random(),
-      nombre: sug.nombre,
-      seccion: sug.seccion,
-      precioUltimaCompra: sug.precio,
-      cantidad: sug.cantidad,
-      incluirEnCesta: true,
-    };
-    setProductos([nuevo, ...productos]);
   };
 
   const handleUpdatePrice = (e: React.FormEvent) => {
@@ -127,12 +112,14 @@ export const SmartGrocerySection: React.FC = () => {
     const nuevoPrecio = parseFloat(editPrecio.replace(',', '.'));
     if (isNaN(nuevoPrecio) || nuevoPrecio < 0) return;
 
-    setProductos(prev => prev.map(p => p.id === editingProduct.id ? { ...p, precioUltimaCompra: nuevoPrecio } : p));
+    const updated = productos.map(p => p.id === editingProduct.id ? { ...p, precioUltimaCompra: nuevoPrecio } : p);
+    updateAndSync(updated);
     setEditingProduct(null);
   };
 
   const removeProduct = (id: string) => {
-    setProductos(prev => prev.filter(p => p.id !== id));
+    const updated = productos.filter(p => p.id !== id);
+    updateAndSync(updated);
   };
 
   // Productos activos en la cesta de esta compra
@@ -144,6 +131,10 @@ export const SmartGrocerySection: React.FC = () => {
   const totalEnCarrito = +(itemsEnCarrito.reduce((sum, p) => sum + (p.precioUltimaCompra || 0), 0)).toFixed(2);
   const itemsPendientes = productosEnCesta.filter(p => !checkedInCart[p.id]);
   const totalPendiente = +(itemsPendientes.reduce((sum, p) => sum + (p.precioUltimaCompra || 0), 0)).toFixed(2);
+
+  // Proyección mensual basada en la lista semanal real (x 4.33 semanas al mes)
+  const gastoMensualEstimadoLista = +(totalEstimadoCesta * 4.33).toFixed(2);
+  const gastoMensualPresupuestado = +(presupuestoTope * 4.33).toFixed(2);
 
   const margenRestante = +(presupuestoTope - totalEnCarrito).toFixed(2);
   const porcentajePresupuestoUsado = presupuestoTope > 0 ? Math.min(100, Math.round((totalEnCarrito / presupuestoTope) * 100)) : 0;
@@ -210,14 +201,14 @@ export const SmartGrocerySection: React.FC = () => {
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-md space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center sm:text-left">
           
-          {/* Total que vas a gastar */}
+          {/* Total que vas a gastar hoy */}
           <div className="col-span-2 sm:col-span-1 border-b sm:border-b-0 sm:border-r border-slate-700/60 pb-3 sm:pb-0 sm:pr-4">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Total a Gastar</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Total Esta Compra</span>
             <p className="text-3xl font-black font-mono tracking-tight mt-0.5 text-white">
               {totalEstimadoCesta.toFixed(2)} <span className="text-lg font-normal text-slate-400">€</span>
             </p>
             <p className="text-[11px] text-slate-300 mt-0.5">
-              {productosEnCesta.length} artículos en tu lista
+              {productosEnCesta.length} artículos apuntados
             </p>
           </div>
 
@@ -228,31 +219,31 @@ export const SmartGrocerySection: React.FC = () => {
               {totalEnCarrito.toFixed(2)} <span className="text-sm font-normal text-slate-400">€</span>
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {itemsEnCarrito.length} recogidos
+              {itemsEnCarrito.length} recogidos en tienda
             </p>
           </div>
 
-          {/* Pendiente por coger */}
+          {/* Por recoger */}
           <div className="border-b sm:border-b-0 sm:border-r border-slate-700/60 pb-3 sm:pb-0 sm:pr-4">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Por Recoger</span>
             <p className="text-2xl sm:text-3xl font-black font-mono text-amber-400 mt-0.5">
               {totalPendiente.toFixed(2)} <span className="text-sm font-normal text-slate-400">€</span>
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {itemsPendientes.length} pendientes
+              {itemsPendientes.length} pendientes en el lineal
             </p>
           </div>
 
           {/* Presupuesto Tope y Margen */}
           <div>
             <div className="flex items-center justify-between sm:justify-start gap-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Presupuesto</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tope Semanal</span>
               <input
                 type="number"
                 value={presupuestoTope}
                 onChange={(e) => setPresupuestoTope(parseFloat(e.target.value) || 0)}
                 className="w-16 bg-slate-800 text-white font-mono font-bold text-xs px-1.5 py-0.5 rounded border border-slate-700 focus:outline-none text-right"
-                title="Cambiar presupuesto tope"
+                title="Cambiar tope por compra"
               />
               <span className="text-xs text-slate-400">€</span>
             </div>
@@ -260,22 +251,36 @@ export const SmartGrocerySection: React.FC = () => {
               {margenRestante >= 0 ? `+${margenRestante.toFixed(2)} €` : `${margenRestante.toFixed(2)} €`}
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {margenRestante >= 0 ? 'Margen disponible' : '¡Presupuesto superado!'}
+              {margenRestante >= 0 ? 'Margen en caja' : '¡Te estás pasando!'}
             </p>
           </div>
         </div>
 
-        {/* Barra de Progreso Visual */}
-        <div className="space-y-1.5 pt-2 border-t border-slate-700/60">
-          <div className="flex items-center justify-between text-xs text-slate-300">
-            <span>Progreso en tienda: {itemsEnCarrito.length} de {productosEnCesta.length} productos</span>
-            <span className="font-mono font-bold">{porcentajePresupuestoUsado}% del tope</span>
+        {/* Proyección Inteligente Mensual (Lo que te gastarás al mes con este ritmo) */}
+        <div className="pt-3 border-t border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-800/40 -mx-2 -mb-2 p-3 rounded-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white">Proyección Mensual de Supermercado</p>
+              <p className="text-[11px] text-slate-400">
+                {totalEstimadoCesta > 0 
+                  ? `Si mantienes esta lista de compra semanal (${totalEstimadoCesta.toFixed(2)} €/semana), gastarás al mes:` 
+                  : 'Apunta los productos que vas a comprar para proyectar tu gasto de alimentación mensual:'}
+              </p>
+            </div>
           </div>
-          <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-300 ${totalEnCarrito > presupuestoTope ? 'bg-rose-500' : 'bg-emerald-500'}`}
-              style={{ width: `${Math.min(100, (totalEnCarrito / (presupuestoTope || 1)) * 100)}%` }}
-            />
+
+          <div className="text-left sm:text-right shrink-0">
+            <span className="text-lg sm:text-xl font-black font-mono text-emerald-400">
+              {gastoMensualEstimadoLista > 0 ? `${gastoMensualEstimadoLista.toFixed(2)} €/mes` : `${gastoMensualPresupuestado.toFixed(2)} €/mes`}
+            </span>
+            {gastoSupermercadoRealMes > 0 && (
+              <p className="text-[10px] text-slate-400">
+                (Extracto bancario del mes pasado: {gastoSupermercadoRealMes.toFixed(2)} €)
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -417,26 +422,22 @@ export const SmartGrocerySection: React.FC = () => {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-900">Tu Despensa y Lista Habitual</h3>
-              <span className="text-xs text-slate-400 font-medium">({productos.length} productos guardados)</span>
+              <h3 className="text-sm font-bold text-slate-900">Tu Lista de Compra Personalizada</h3>
+              <span className="text-xs text-slate-400 font-medium">({productos.length} artículos guardados)</span>
             </div>
-
-            {/* Sugerencias Rápidas Populares */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-              <span className="text-slate-400 shrink-0 flex items-center gap-1 font-semibold">
-                <Sparkles className="w-3 h-3 text-amber-500" /> Añadir básico:
-              </span>
-              {SUGERENCIAS_RAPIDAS.slice(0, 4).map((sug, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleAddSugerencia(sug)}
-                  className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-[11px] transition cursor-pointer"
-                >
-                  + {sug.nombre}
-                </button>
-              ))}
-            </div>
+            <p className="text-xs text-slate-400">
+              Marca con un check los que te hagan falta esta semana antes de salir.
+            </p>
           </div>
+
+          {productos.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-2">
+              <p className="text-sm font-bold text-slate-700">Tu lista está vacía</p>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Escribe en la barra de arriba lo que realmente te haga falta antes de salir de casa (ej. "Leche 1.25€", "Plátanos 2€"). La web lo guardará para tus próximas compras.
+              </p>
+            </div>
+          ) : (
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {productos.map((prod) => (
@@ -497,6 +498,7 @@ export const SmartGrocerySection: React.FC = () => {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
