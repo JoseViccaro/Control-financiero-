@@ -95,7 +95,32 @@ export function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Canal en tiempo real: cuando cambie el perfil en la base de datos (por ejemplo, desde el ordenador),
+    // se refleja automáticamente e inmediatamente en el móvil y viceversa sin tener que recargar.
+    const channel = supabase
+      .channel('user_profiles_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.profile_data) {
+            setPerfil(payload.new.profile_data);
+            try {
+              localStorage.setItem('cf_local_profile_v1', JSON.stringify(payload.new.profile_data));
+            } catch (e) {}
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
