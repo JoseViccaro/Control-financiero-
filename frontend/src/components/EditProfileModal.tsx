@@ -102,7 +102,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Configurar Mis Datos Financieros</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Tus datos se guardan en tu navegador en local de forma 100% privada.</p>
+            <p className="text-xs text-slate-400 mt-0.5">Tus datos se sincronizan con tu cuenta de Supabase en la nube de forma segura.</p>
           </div>
           <button
             onClick={onClose}

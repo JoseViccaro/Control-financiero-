@@ -49,19 +49,14 @@ export function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [perfil, setPerfil] = useState<UserFinancialProfile>(() => {
-    const saved = localStorage.getItem('control_financiero_profile');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Error parseando perfil guardado', e);
-      }
-    }
-    return INITIAL_PROFILE;
-  });
+  const [perfil, setPerfil] = useState<UserFinancialProfile>(INITIAL_PROFILE);
 
-  // Cargar perfil desde Supabase si hay sesión
+  // Limpiar cualquier residuo previo de localStorage
+  useEffect(() => {
+    localStorage.removeItem('control_financiero_profile');
+  }, []);
+
+  // Cargar perfil desde Supabase si hay sesión activa
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -77,6 +72,7 @@ export function App() {
         loadCloudProfile(session.user.id);
       } else {
         setUserEmail(null);
+        setPerfil(INITIAL_PROFILE);
       }
     });
 
@@ -98,9 +94,8 @@ export function App() {
 
   const saveProfileWithSync = async (updated: UserFinancialProfile) => {
     setPerfil(updated);
-    localStorage.setItem('control_financiero_profile', JSON.stringify(updated));
 
-    if (supabase && userEmail) {
+    if (supabase) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('user_profiles').upsert(
@@ -114,10 +109,6 @@ export function App() {
       }
     }
   };
-
-  useEffect(() => {
-    localStorage.setItem('control_financiero_profile', JSON.stringify(perfil));
-  }, [perfil]);
 
   // Cálculos en tiempo real utilizando directamente el motor TypeScript
   const summary = calculateMonthlySummary(perfil);
