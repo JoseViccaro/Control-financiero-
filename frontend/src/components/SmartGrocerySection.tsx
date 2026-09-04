@@ -211,25 +211,25 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
         </div>
       </div>
 
-      {/* PANEL RESUMEN FLOTANTE/DESTACADO: Suma total de lo que vas a gastar */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-md space-y-4">
+      {/* PANEL RESUMEN: Diseño estilo Apple en blanco puro, limpio y minimalista */}
+      <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center sm:text-left">
           
           {/* Total que vas a gastar hoy */}
-          <div className="col-span-2 sm:col-span-1 border-b sm:border-b-0 sm:border-r border-slate-700/60 pb-3 sm:pb-0 sm:pr-4">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Total Esta Compra</span>
-            <p className="text-3xl font-black font-mono tracking-tight mt-0.5 text-white">
+          <div className="col-span-2 sm:col-span-1 border-b sm:border-b-0 sm:border-r border-slate-200 pb-3 sm:pb-0 sm:pr-4">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Esta Compra</span>
+            <p className="text-3xl font-black font-mono tracking-tight mt-0.5 text-slate-900">
               {totalEstimadoCesta.toFixed(2)} <span className="text-lg font-normal text-slate-400">€</span>
             </p>
-            <p className="text-[11px] text-slate-300 mt-0.5">
-              {productosEnCesta.length} artículos apuntados
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {productosEnCesta.length} artículos en tu lista
             </p>
           </div>
 
           {/* Llevas en Carrito */}
-          <div className="border-r border-slate-700/60 pr-4">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">En el Carrito</span>
-            <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 mt-0.5">
+          <div className="border-r border-slate-200 pr-4">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">En el Carrito</span>
+            <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 mt-0.5">
               {totalEnCarrito.toFixed(2)} <span className="text-sm font-normal text-slate-400">€</span>
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -238,9 +238,9 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
           </div>
 
           {/* Por recoger */}
-          <div className="border-b sm:border-b-0 sm:border-r border-slate-700/60 pb-3 sm:pb-0 sm:pr-4">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Por Recoger</span>
-            <p className="text-2xl sm:text-3xl font-black font-mono text-amber-400 mt-0.5">
+          <div className="border-b sm:border-b-0 sm:border-r border-slate-200 pb-3 sm:pb-0 sm:pr-4">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Por Recoger</span>
+            <p className="text-2xl sm:text-3xl font-black font-mono text-amber-600 mt-0.5">
               {totalPendiente.toFixed(2)} <span className="text-sm font-normal text-slate-400">€</span>
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -251,48 +251,48 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
           {/* Presupuesto Tope y Margen */}
           <div>
             <div className="flex items-center justify-between sm:justify-start gap-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tope Semanal</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tope Semanal</span>
               <input
                 type="number"
                 value={presupuestoTope}
                 onChange={(e) => setPresupuestoTope(parseFloat(e.target.value) || 0)}
-                className="w-16 bg-slate-800 text-white font-mono font-bold text-xs px-1.5 py-0.5 rounded border border-slate-700 focus:outline-none text-right"
-                title="Cambiar tope por compra"
+                className="w-16 bg-white text-slate-900 font-mono font-bold text-xs px-1.5 py-0.5 rounded-lg border border-slate-300 focus:outline-none text-right"
+                title="Tope calculado: gasto mensual del extracto / 4.33 semanas"
               />
               <span className="text-xs text-slate-400">€</span>
             </div>
-            <p className={`text-2xl font-black font-mono mt-0.5 ${margenRestante >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <p className={`text-2xl font-black font-mono mt-0.5 ${margenRestante >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               {margenRestante >= 0 ? `+${margenRestante.toFixed(2)} €` : `${margenRestante.toFixed(2)} €`}
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {margenRestante >= 0 ? 'Margen en caja' : '¡Te estás pasando!'}
+              {margenRestante >= 0 ? 'Margen en caja' : '¡Superas tu tope!'}
             </p>
           </div>
         </div>
 
-        {/* Proyección Inteligente Mensual (Lo que te gastarás al mes con este ritmo) */}
-        <div className="pt-3 border-t border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-800/40 -mx-2 -mb-2 p-3 rounded-2xl">
+        {/* Proyección Inteligente Mensual Explicada */}
+        <div className="pt-3 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white -mx-2 -mb-2 p-3.5 rounded-2xl border border-slate-200/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-white">Proyección Mensual de Supermercado</p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs font-bold text-slate-900">Proyección Mensual de Supermercado</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
                 {totalEstimadoCesta > 0 
-                  ? `Si mantienes esta lista de compra semanal (${totalEstimadoCesta.toFixed(2)} €/semana), gastarás al mes:` 
-                  : 'Apunta los productos que vas a comprar para proyectar tu gasto de alimentación mensual:'}
+                  ? `Calculado matemáticamente: tu cesta de hoy (${totalEstimadoCesta.toFixed(2)} €) × 4.33 semanas:` 
+                  : 'Apunta los productos que vas a comprar para proyectar tu gasto real al mes:'}
               </p>
             </div>
           </div>
 
           <div className="text-left sm:text-right shrink-0">
-            <span className="text-lg sm:text-xl font-black font-mono text-emerald-400">
+            <span className="text-lg sm:text-xl font-black font-mono text-slate-900">
               {gastoMensualEstimadoLista > 0 ? `${gastoMensualEstimadoLista.toFixed(2)} €/mes` : `${gastoMensualPresupuestado.toFixed(2)} €/mes`}
             </span>
             {gastoSupermercadoRealMes > 0 && (
-              <p className="text-[10px] text-slate-400">
-                (Extracto bancario del mes pasado: {gastoSupermercadoRealMes.toFixed(2)} €)
+              <p className="text-[10px] text-slate-400 font-medium">
+                Detectado en tus extractos: {gastoSupermercadoRealMes.toFixed(2)} €/mes
               </p>
             )}
           </div>
@@ -300,7 +300,7 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
       </div>
 
       {/* FORMULARIO RÁPIDO PARA EL MÓVIL: Añadir producto al instante */}
-      <form onSubmit={handleQuickAdd} className="flex flex-col sm:flex-row items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+      <form onSubmit={handleQuickAdd} className="flex flex-col sm:flex-row items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
         <div className="relative w-full sm:flex-1">
           <input
             type="text"
@@ -331,31 +331,30 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
         </div>
       </form>
 
-      {/* VISTA 1: MODO SUPERMERCADO A PANTALLA COMPLETA (Experiencia Inmersiva en Tienda) */}
+      {/* VISTA 1: MODO SUPERMERCADO A PANTALLA COMPLETA ESTILO APPLE (Fondo blanco pulcro, minimalista y legible) */}
       {modoSupermercado && (
-        <div className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col animate-in fade-in overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-white text-slate-900 flex flex-col animate-in fade-in overflow-hidden">
           
-          {/* Cabecera Superior Fija con Botón de Salir y Totales Clave */}
-          <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 sm:py-4 shrink-0 flex items-center justify-between gap-3 shadow-lg">
+          {/* Cabecera Superior Fija Minimalista */}
+          <div className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 sm:py-4 shrink-0 flex items-center justify-between gap-3 shadow-xs">
             <button
               onClick={() => setModoSupermercado(false)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition cursor-pointer shrink-0"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Salir de Modo Súper</span>
-              <span className="sm:hidden">Salir</span>
+              <ArrowLeft className="w-4 h-4 text-slate-700" />
+              <span>Volver</span>
             </button>
 
-            <div className="flex items-center gap-3 text-right">
+            <div className="flex items-center gap-4 text-right">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">En Carrito</span>
-                <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+                <span className="text-xl sm:text-2xl font-black font-mono text-emerald-600">
                   {totalEnCarrito.toFixed(2)} €
                 </span>
               </div>
-              <div className="border-l border-slate-800 pl-3">
+              <div className="border-l border-slate-200 pl-3">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Margen</span>
-                <span className={`text-xl sm:text-2xl font-black font-mono ${margenRestante >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                <span className={`text-xl sm:text-2xl font-black font-mono ${margenRestante >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
                   {margenRestante.toFixed(2)} €
                 </span>
               </div>
@@ -363,17 +362,17 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
           </div>
 
           {/* Barra de Progreso y Datos Rápidos */}
-          <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-2.5 shrink-0 flex items-center justify-between text-xs text-slate-300">
+          <div className="bg-slate-50 border-b border-slate-200/70 px-4 py-2.5 shrink-0 flex items-center justify-between text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{itemsEnCarrito.length} de {productosEnCesta.length} recogidos</span>
+              <span className="font-medium">{itemsEnCarrito.length} de {productosEnCesta.length} recogidos</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-slate-400">Tope: {presupuestoTope} €</span>
+              <span className="text-slate-500">Tope: <strong>{presupuestoTope} €</strong></span>
               {itemsEnCarrito.length > 0 && (
                 <button
                   onClick={handleResetCartChecks}
-                  className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] font-bold text-slate-500 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" /> Reiniciar
                 </button>
@@ -381,17 +380,17 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
             </div>
           </div>
 
-          {/* Lista Scrolleable a Pantalla Completa */}
+          {/* Lista Scrolleable a Pantalla Completa en Blanco */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-2xl mx-auto w-full">
             {productosEnCesta.length === 0 ? (
-              <div className="p-8 text-center bg-slate-900/60 border border-dashed border-slate-800 rounded-3xl space-y-3 mt-10">
-                <p className="text-base font-bold text-slate-200">No tienes artículos marcados para hoy</p>
+              <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-3xl space-y-3 mt-10">
+                <p className="text-base font-bold text-slate-900">No tienes artículos marcados para hoy</p>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Sal del modo supermercado y marca los productos que necesitas comprar en tu lista antes de empezar.
+                  Vuelve atrás y marca los productos que necesitas comprar en tu lista antes de empezar.
                 </p>
                 <button
                   onClick={() => setModoSupermercado(false)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
                 >
                   Volver a mi lista
                 </button>
@@ -408,14 +407,14 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
                       <div
                         key={prod.id}
                         onClick={() => toggleCartCheck(prod.id)}
-                        className="p-4 rounded-2xl bg-slate-900 border-2 border-slate-800 hover:border-emerald-500 shadow-md flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
+                        className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-500 shadow-xs flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-9 h-9 rounded-xl border-2 border-slate-700 bg-slate-800 flex items-center justify-center shrink-0 text-transparent">
+                          <div className="w-8 h-8 rounded-xl border-2 border-slate-300 bg-slate-50 flex items-center justify-center shrink-0 text-transparent">
                             <Check className="w-5 h-5 stroke-[3]" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-extrabold text-base text-white truncate">{prod.nombre}</p>
+                            <p className="font-extrabold text-base text-slate-900 truncate">{prod.nombre}</p>
                             <div className="flex items-center gap-2 mt-0.5">
                               {getSectionBadge(prod.seccion)}
                               <span className="text-xs text-slate-400 font-medium">{prod.cantidad}</span>
@@ -424,7 +423,7 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
                         </div>
 
                         <div className="text-right shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <span className="font-mono font-black text-lg text-emerald-400">
+                          <span className="font-mono font-black text-lg text-slate-900">
                             {prod.precioUltimaCompra > 0 ? `${prod.precioUltimaCompra.toFixed(2)} €` : '0.00 €'}
                           </span>
                           <button
@@ -432,7 +431,7 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
                               setEditingProduct(prod);
                               setEditPrecio(prod.precioUltimaCompra ? prod.precioUltimaCompra.toString() : '');
                             }}
-                            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                            className="p-2 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
                             title="Editar precio"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -446,23 +445,23 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
                 {/* 2. ARTÍCULOS YA RECOGIDOS EN EL CARRO */}
                 {itemsEnCarrito.length > 0 && (
                   <div className="pt-4 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-semibold">
+                    <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-semibold">
                       <span>Recogidos en el carrito ({itemsEnCarrito.length})</span>
-                      <span className="font-mono">{totalEnCarrito.toFixed(2)} €</span>
+                      <span className="font-mono text-slate-500">{totalEnCarrito.toFixed(2)} €</span>
                     </div>
                     {itemsEnCarrito.map((prod) => (
                       <div
                         key={prod.id}
                         onClick={() => toggleCartCheck(prod.id)}
-                        className="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/60 opacity-55 flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
+                        className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 opacity-60 flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
                           <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                            <Check className="w-5 h-5 stroke-[3]" />
+                            <Check className="w-4 h-4 stroke-[3]" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-bold text-sm text-slate-400 line-through truncate">{prod.nombre}</p>
-                            <span className="text-xs text-slate-500">{prod.cantidad}</span>
+                            <p className="font-bold text-sm text-slate-600 line-through truncate">{prod.nombre}</p>
+                            <span className="text-xs text-slate-400">{prod.cantidad}</span>
                           </div>
                         </div>
 
