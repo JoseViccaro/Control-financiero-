@@ -160,19 +160,44 @@ export function App() {
   const handleImportTransactions = (txs: FinancialTransaction[], titular?: string) => {
     // Si viene titular, asegurar que cada transacción lo tenga
     const taggedTxs = titular ? txs.map(t => ({ ...t, titular })) : txs;
-    const allMovs = [...taggedTxs, ...(perfil.movimientosReales || [])];
+    
+    // Evitar duplicados por clave fecha + concepto + importe + titular
+    const existing = perfil.movimientosReales || [];
+    const existingKeys = new Set(existing.map(m => `${m.fecha}_${m.concepto}_${m.importe}_${m.titular || ''}`));
+    
+    const newUniqueTxs = taggedTxs.filter(t => !existingKeys.has(`${t.fecha}_${t.concepto}_${t.importe}_${t.titular || ''}`));
+    const allMovs = [...newUniqueTxs, ...existing];
     
     // Reconstruir automáticamente el perfil con las categorías y números reales del conjunto
     const updatedProfile = buildProfileFromTransactions(allMovs, perfil);
     saveProfileWithSync(updatedProfile);
   };
 
+  const handleClearTransactions = () => {
+    if (confirm('¿Deseas vaciar todos los movimientos importados para volver a subirlos limpios?')) {
+      const updatedProfile = buildProfileFromTransactions([], perfil);
+      saveProfileWithSync({
+        ...updatedProfile,
+        movimientosReales: [],
+      });
+    }
+  };
+
+  const handleUpdateTransactionCategory = (id: string, newCat: TransactionCategory) => {
+    const updatedMovs = (perfil.movimientosReales || []).map(t => {
+      if (t.id === id) {
+        return { ...t, categoria: newCat };
+      }
+      return t;
+    });
+    const updatedProfile = buildProfileFromTransactions(updatedMovs, perfil);
+    saveProfileWithSync(updatedProfile);
+  };
+
   const handleRemoveTransaction = (id: string) => {
     const updatedMovs = (perfil.movimientosReales || []).filter((t) => t.id !== id);
-    saveProfileWithSync({
-      ...perfil,
-      movimientosReales: updatedMovs,
-    });
+    const updatedProfile = buildProfileFromTransactions(updatedMovs, perfil);
+    saveProfileWithSync(updatedProfile);
   };
 
   const handleReset = () => {
@@ -373,6 +398,8 @@ export function App() {
             onAddTransaction={handleAddTransaction}
             onImportTransactions={handleImportTransactions}
             onRemoveTransaction={handleRemoveTransaction}
+            onClearTransactions={handleClearTransactions}
+            onUpdateTransactionCategory={handleUpdateTransactionCategory}
             supermercadoPresupuestado={perfil.gastosVariables.supermercado}
           />
         </section>

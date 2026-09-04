@@ -9,6 +9,8 @@ interface BankLedgerSectionProps {
   onAddTransaction: (tx: FinancialTransaction) => void;
   onImportTransactions: (txs: FinancialTransaction[], titular: string) => void;
   onRemoveTransaction: (id: string) => void;
+  onClearTransactions?: () => void;
+  onUpdateTransactionCategory?: (id: string, newCat: TransactionCategory) => void;
   supermercadoPresupuestado: number;
 }
 
@@ -17,6 +19,8 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
   onAddTransaction,
   onImportTransactions,
   onRemoveTransaction,
+  onClearTransactions,
+  onUpdateTransactionCategory,
   supermercadoPresupuestado,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -128,6 +132,7 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
     const map: Record<TransactionCategory, string> = {
       nomina: 'Nómina / Ingreso',
       ingreso_extra: 'Ingreso Extra',
+      transferencia_interna: 'Traspaso Interno (Neutro)',
       vivienda: 'Vivienda',
       suministros: 'Suministros',
       supermercado: 'Supermercado',
@@ -141,6 +146,22 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
     };
     return map[cat] || cat;
   };
+
+  const CATEGORIAS_DISPONIBLES: { id: TransactionCategory; label: string }[] = [
+    { id: 'supermercado', label: 'Supermercado' },
+    { id: 'vivienda', label: 'Vivienda / Alquiler' },
+    { id: 'suministros', label: 'Suministros (Luz, Agua, etc.)' },
+    { id: 'deuda', label: 'Pago Deuda / Tarjetas' },
+    { id: 'ocio_restaurantes', label: 'Ocio / Restaurantes' },
+    { id: 'compras', label: 'Compras' },
+    { id: 'transporte', label: 'Transporte / Gasolina' },
+    { id: 'suscripciones', label: 'Suscripciones' },
+    { id: 'salud', label: 'Salud' },
+    { id: 'nomina', label: 'Nómina / Salario' },
+    { id: 'ingreso_extra', label: 'Ingreso Extra' },
+    { id: 'transferencia_interna', label: 'Traspaso Interno (Neutro)' },
+    { id: 'otros', label: 'Otros / Varios' },
+  ];
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/70 shadow-sm shadow-slate-100 space-y-6">
@@ -159,6 +180,16 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {transactions.length > 0 && onClearTransactions && (
+            <button
+              onClick={onClearTransactions}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition cursor-pointer"
+              title="Borrar todos los movimientos para empezar de cero"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Vaciar Lista
+            </button>
+          )}
+
           <button
             onClick={() => setShowImportModal(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
@@ -439,9 +470,23 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
                     </div>
                   </td>
                   <td className="py-3 px-4 text-slate-500">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100 font-medium">
-                      {getCategoryLabel(tx.categoria)}
-                    </span>
+                    {onUpdateTransactionCategory ? (
+                      <select
+                        value={tx.categoria}
+                        onChange={(e) => onUpdateTransactionCategory(tx.id, e.target.value as TransactionCategory)}
+                        className="text-[11px] font-medium bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+                      >
+                        {CATEGORIAS_DISPONIBLES.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100 font-medium">
+                        {getCategoryLabel(tx.categoria)}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-right font-bold font-mono whitespace-nowrap">
                     <span className={tx.importe > 0 ? 'text-emerald-600' : 'text-slate-900'}>

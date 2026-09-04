@@ -71,6 +71,12 @@ export function parseBankCSV(csvText: string, titular: string = 'Titular Princip
 export function autoCategorizeConcepto(concepto: string): TransactionCategory {
   const c = concepto.toLowerCase();
 
+  // Transferencias internas / Traspasos entre cuentas propias de la familia
+  if (c.includes('traspaso propio') || c.includes('traspaso') || c.includes('entre mis cuentas') || c.includes('transferencia interna')) {
+    return 'transferencia_interna';
+  }
+
+  // Nóminas y salarios reales
   if (c.includes('nomina') || c.includes('salario') || c.includes('haber') || c.includes('transferencia recibida') || c.includes('transfer inmediata')) {
     return 'nomina';
   }
@@ -139,8 +145,16 @@ export function buildProfileFromTransactions(
   for (const t of transactions) {
     const abs = Math.abs(t.importe);
 
+    // Si es transferencia interna entre cuentas familiares, NO es ingreso ni gasto real externo
+    if (t.categoria === 'transferencia_interna') {
+      continue;
+    }
+
     if (t.importe > 0) {
-      ingresosTotales += t.importe;
+      // Ignorar pequeños abonos o devoluciones de billetes / tiendas como nóminas
+      if (t.categoria === 'nomina' || abs >= 300) {
+        ingresosTotales += t.importe;
+      }
       continue;
     }
 

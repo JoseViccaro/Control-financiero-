@@ -177,6 +177,7 @@ export interface BankAccount {
 export type TransactionCategory =
   | 'nomina'
   | 'ingreso_extra'
+  | 'transferencia_interna'
   | 'vivienda'
   | 'suministros'
   | 'supermercado'
