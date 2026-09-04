@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import type { FinancialTransaction, TransactionCategory } from '../../../src/models/types';
 import { parseBankCSV } from '../../../src/services/bankImportService';
-import { Upload, Plus, Trash2, FileSpreadsheet, Users, Calendar, Filter } from 'lucide-react';
+import { parseBankPDF } from '../services/bankPdfParserService';
+import { Upload, Plus, Trash2, FileSpreadsheet, FileText, Users, Calendar, Filter } from 'lucide-react';
 
 interface BankLedgerSectionProps {
   transactions: FinancialTransaction[];
@@ -21,6 +22,7 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importTitular, setImportTitular] = useState('Mi Nómina / Yo');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Filtros de mes y titular
   const [filtroMes, setFiltroMes] = useState<string>('todos');
@@ -63,25 +65,40 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
     .filter((t) => t.categoria === 'supermercado' && t.importe < 0)
     .reduce((sum, t) => sum + Math.abs(t.importe), 0);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
+    setIsProcessing(true);
+
+    try {
+      const fileName = file.name.toLowerCase();
+      if (fileName.endsWith('.pdf')) {
+        const buffer = await file.arrayBuffer();
+        const parsed = await parseBankPDF(buffer, importTitular);
+        if (parsed.length > 0) {
+          onImportTransactions(parsed, importTitular);
+          setShowImportModal(false);
+        } else {
+          alert('No se pudieron leer transacciones en el PDF. Asegúrate de que sea un extracto bancario con conceptos y cantidades.');
+        }
+      } else {
+        const text = await file.text();
         const parsed = parseBankCSV(text, importTitular);
         if (parsed.length > 0) {
           onImportTransactions(parsed, importTitular);
           setShowImportModal(false);
         } else {
-          alert('No se pudieron detectar movimientos en el archivo. Asegúrate de que sea un extracto CSV de tu banco.');
+          alert('No se pudieron detectar movimientos en el archivo CSV. Comprueba el formato de tu banco.');
         }
       }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      console.error('Error al procesar extracto:', err);
+      alert('Error al leer el archivo: ' + (err?.message || 'Formato no reconocido'));
+    } finally {
+      setIsProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -249,15 +266,33 @@ export const BankLedgerSection: React.FC<BankLedgerSectionProps> = ({
                 </select>
               </div>
 
-              <div className="p-4 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2">
-                <p className="text-xs text-slate-600 font-medium">Selecciona el archivo CSV de tu banco:</p>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept=".csv,.txt"
-                  className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer"
-                />
+              <div className="p-5 border-2 border-dashed border-slate-200 hover:border-emerald-400/80 rounded-2xl text-center space-y-3 bg-slate-50/50 transition">
+                <div className="flex justify-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                    <FileText className="w-3 h-3" /> PDF Bancario (CaixaBank, etc.)
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <FileSpreadsheet className="w-3 h-3" /> CSV / Excel
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-600 font-medium">
+                  {isProcessing ? 'Analizando extracto bancario con IA...' : 'Elige tu extracto en PDF o CSV:'}
+                </p>
+
+                {isProcessing ? (
+                  <div className="py-2 flex items-center justify-center gap-2 text-xs font-bold text-emerald-600">
+                    <span className="animate-spin text-base">⏳</span> Extrayendo movimientos...
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept=".pdf,.csv,.txt"
+                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer"
+                  />
+                )}
               </div>
             </div>
 

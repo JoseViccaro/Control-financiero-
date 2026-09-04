@@ -71,31 +71,31 @@ export function parseBankCSV(csvText: string, titular: string = 'Titular Princip
 export function autoCategorizeConcepto(concepto: string): TransactionCategory {
   const c = concepto.toLowerCase();
 
-  if (c.includes('nomina') || c.includes('salario') || c.includes('haber') || c.includes('transferencia recibida')) {
+  if (c.includes('nomina') || c.includes('salario') || c.includes('haber') || c.includes('transferencia recibida') || c.includes('transfer inmediata')) {
     return 'nomina';
   }
-  if (c.includes('alquiler') || c.includes('hipoteca') || c.includes('comunidad')) {
+  if (c.includes('alquiler') || c.includes('hipoteca') || c.includes('comunidad') || c.includes('oficina virtual g')) {
     return 'vivienda';
   }
-  if (c.includes('mercadona') || c.includes('carrefour') || c.includes('lidl') || c.includes('dia') || c.includes('supermercado') || c.includes('alcampo') || c.includes('eroski')) {
+  if (c.includes('mercadona') || c.includes('carrefour') || c.includes('lidl') || c.includes('dia') || c.includes('supermercado') || c.includes('alcampo') || c.includes('eroski') || c.includes('ahorramas') || c.includes('supeco')) {
     return 'supermercado';
   }
-  if (c.includes('restaurante') || c.includes('bar') || c.includes('cafe') || c.includes('mcdonald') || c.includes('burger') || c.includes('glovo') || c.includes('uber eats') || c.includes('just eat')) {
+  if (c.includes('restaurante') || c.includes('bar') || c.includes('cafe') || c.includes('mcdonald') || c.includes('burger') || c.includes('glovo') || c.includes('uber eats') || c.includes('just eat') || c.includes('kfc') || c.includes('marmar')) {
     return 'ocio_restaurantes';
   }
-  if (c.includes('netflix') || c.includes('spotify') || c.includes('amazon prime') || c.includes('disney') || c.includes('hbo') || c.includes('apple') || c.includes('suscripcion')) {
+  if (c.includes('netflix') || c.includes('spotify') || c.includes('amazon prime') || c.includes('disney') || c.includes('hbo') || c.includes('apple') || c.includes('suscripcion') || c.includes('apple.com/bill')) {
     return 'suscripciones';
   }
-  if (c.includes('gasolina') || c.includes('repsol') || c.includes('cepsa') || c.includes('metro') || c.includes('renfe') || c.includes('uber') || c.includes('cabify')) {
+  if (c.includes('gasolina') || c.includes('repsol') || c.includes('cepsa') || c.includes('metro') || c.includes('renfe') || c.includes('uber') || c.includes('cabify') || c.includes('crtm') || c.includes('movili')) {
     return 'transporte';
   }
-  if (c.includes('luz') || c.includes('agua') || c.includes('iberdrola') || c.includes('endesa') || c.includes('naturgy') || c.includes('vodafone') || c.includes('movistar') || c.includes('orange')) {
+  if (c.includes('luz') || c.includes('agua') || c.includes('iberdrola') || c.includes('endesa') || c.includes('naturgy') || c.includes('vodafone') || c.includes('movistar') || c.includes('orange') || c.includes('digi') || c.includes('mybox')) {
     return 'suministros';
   }
-  if (c.includes('prestamo') || c.includes('tarjeta') || c.includes('credito') || c.includes('financiera') || c.includes('cetelem')) {
+  if (c.includes('prestamo') || c.includes('tarjeta') || c.includes('credito') || c.includes('financiera') || c.includes('cetelem') || c.includes('visa &go') || c.includes('mycard') || c.includes('pres.')) {
     return 'deuda';
   }
-  if (c.includes('zara') || c.includes('amazon') || c.includes('aliexpress') || c.includes('shein') || c.includes('tienda')) {
+  if (c.includes('zara') || c.includes('amazon') || c.includes('aliexpress') || c.includes('shein') || c.includes('tienda') || c.includes('decimas')) {
     return 'compras';
   }
 
@@ -104,12 +104,12 @@ export function autoCategorizeConcepto(concepto: string): TransactionCategory {
 
 export function detectFugaInTransaction(concepto: string, importe: number): boolean {
   const c = concepto.toLowerCase();
-  // Gastos hormiga: microimportes entre 1€ y 7€ repetidos (cafés, máquinas, snacks)
-  if (importe < 0 && Math.abs(importe) <= 7 && (c.includes('cafe') || c.includes('vending') || c.includes('kiosco') || c.includes('tabaco') || c.includes('panaderia'))) {
+  // Gastos hormiga: microimportes entre 0.10€ y 7€ repetidos (mcdonalds 1.50€, aseos 0.20€, cafes, snacks)
+  if (importe < 0 && Math.abs(importe) <= 7 && (c.includes('cafe') || c.includes('vending') || c.includes('kiosco') || c.includes('tabaco') || c.includes('panaderia') || c.includes('mcdonald') || c.includes('kfc') || c.includes('aseos') || c.includes('marmar'))) {
     return true;
   }
   // Gastos vampiro: suscripciones
-  if (c.includes('netflix') || c.includes('spotify') || c.includes('prime') || c.includes('hbo') || c.includes('apple') || c.includes('disney')) {
+  if (c.includes('netflix') || c.includes('spotify') || c.includes('prime') || c.includes('hbo') || c.includes('apple') || c.includes('disney') || c.includes('apple.com/bill')) {
     return true;
   }
   return false;
