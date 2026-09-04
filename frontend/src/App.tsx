@@ -50,11 +50,17 @@ export function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [perfil, setPerfil] = useState<UserFinancialProfile>(INITIAL_PROFILE);
+  const [perfil, setPerfil] = useState<UserFinancialProfile>(() => {
+    try {
+      const saved = localStorage.getItem('cf_local_profile_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_PROFILE;
+  });
 
   // Limpiar cualquier residuo previo de localStorage y caché antigua
   useEffect(() => {
-    localStorage.removeItem('control_financiero_profile');
+    // localStorage.removeItem('control_financiero_profile');
     localStorage.removeItem('control_financiero_real_grocery_list');
     localStorage.removeItem('control_financiero_grocery_budget');
     localStorage.removeItem('grocery_products');
@@ -107,6 +113,9 @@ export function App() {
 
   const saveProfileWithSync = async (updated: UserFinancialProfile) => {
     setPerfil(updated);
+    try {
+      localStorage.setItem('cf_local_profile_v1', JSON.stringify(updated));
+    } catch (e) {}
 
     if (supabase) {
       const { data: { user } } = await supabase.auth.getUser();
