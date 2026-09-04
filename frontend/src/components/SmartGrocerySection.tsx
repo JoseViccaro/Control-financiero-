@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, 
   Check, 
@@ -8,7 +8,9 @@ import {
   Trash2, 
   Edit2, 
   RotateCcw,
-  Sparkles
+  Sparkles,
+  X,
+  ArrowLeft
 } from 'lucide-react';
 
 export interface UserCustomGroceryProduct {
@@ -55,6 +57,18 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
   // Estados de control y compra activa
   const [modoSupermercado, setModoSupermercado] = useState(false);
   const [checkedInCart, setCheckedInCart] = useState<Record<string, boolean>>({});
+
+  // Bloquear scroll de la página principal cuando está en Modo Tienda Pantalla Completa
+  useEffect(() => {
+    if (modoSupermercado) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [modoSupermercado]);
   
   // Input rápido
   const [quickInputNombre, setQuickInputNombre] = useState('');
@@ -317,108 +331,155 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
         </div>
       </form>
 
-      {/* VISTA 1: MODO SUPERMERCADO ACTIVO (Optimizado para una sola mano en el móvil) */}
-      {modoSupermercado ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <span>Lista de Compra en Mano</span>
-              <span className="text-xs font-normal text-slate-500">
-                (Toca cada artículo para tacharlo y sumarlo al carrito)
-              </span>
-            </h3>
-            {itemsEnCarrito.length > 0 && (
-              <button
-                onClick={handleResetCartChecks}
-                className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" /> Reiniciar
-              </button>
-            )}
+      {/* VISTA 1: MODO SUPERMERCADO A PANTALLA COMPLETA (Experiencia Inmersiva en Tienda) */}
+      {modoSupermercado && (
+        <div className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col animate-in fade-in overflow-hidden">
+          
+          {/* Cabecera Superior Fija con Botón de Salir y Totales Clave */}
+          <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 sm:py-4 shrink-0 flex items-center justify-between gap-3 shadow-lg">
+            <button
+              onClick={() => setModoSupermercado(false)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Salir de Modo Súper</span>
+              <span className="sm:hidden">Salir</span>
+            </button>
+
+            <div className="flex items-center gap-3 text-right">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">En Carrito</span>
+                <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+                  {totalEnCarrito.toFixed(2)} €
+                </span>
+              </div>
+              <div className="border-l border-slate-800 pl-3">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Margen</span>
+                <span className={`text-xl sm:text-2xl font-black font-mono ${margenRestante >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                  {margenRestante.toFixed(2)} €
+                </span>
+              </div>
+            </div>
           </div>
 
-          {productosEnCesta.length === 0 ? (
-            <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-3xl space-y-2">
-              <p className="text-sm font-bold text-slate-800">No tienes productos seleccionados para esta compra</p>
-              <p className="text-xs text-slate-400">
-                Usa el buscador de arriba o sal del Modo Tienda para marcar los productos de tu despensa.
-              </p>
+          {/* Barra de Progreso y Datos Rápidos */}
+          <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-2.5 shrink-0 flex items-center justify-between text-xs text-slate-300">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{itemsEnCarrito.length} de {productosEnCesta.length} recogidos</span>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Productos PENDIENTES de recoger (Arriba, destacados para el móvil) */}
-              {itemsPendientes.map((prod) => (
-                <div
-                  key={prod.id}
-                  onClick={() => toggleCartCheck(prod.id)}
-                  className="p-3.5 sm:p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-emerald-500 shadow-xs flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-xl border-2 border-slate-300 bg-slate-50 flex items-center justify-center shrink-0 text-transparent">
-                      <Check className="w-5 h-5 stroke-[3]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-sm sm:text-base text-slate-900 truncate">{prod.nombre}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {getSectionBadge(prod.seccion)}
-                        <span className="text-xs text-slate-400">{prod.cantidad}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <span className="font-mono font-black text-base sm:text-lg text-slate-900">
-                      {prod.precioUltimaCompra > 0 ? `${prod.precioUltimaCompra.toFixed(2)} €` : '0.00 €'}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setEditingProduct(prod);
-                        setEditPrecio(prod.precioUltimaCompra ? prod.precioUltimaCompra.toString() : '');
-                      }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition"
-                      title="Editar precio"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {/* Productos YA RECOGIDOS (Abajo, atenuados y tachados) */}
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400">Tope: {presupuestoTope} €</span>
               {itemsEnCarrito.length > 0 && (
-                <div className="pt-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-semibold">
-                    <span>En el carrito ({itemsEnCarrito.length})</span>
-                    <span>{totalEnCarrito.toFixed(2)} €</span>
-                  </div>
-                  {itemsEnCarrito.map((prod) => (
-                    <div
-                      key={prod.id}
-                      onClick={() => toggleCartCheck(prod.id)}
-                      className="p-3 rounded-2xl bg-slate-50 border border-slate-200/60 opacity-60 flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                          <Check className="w-4 h-4 stroke-[3]" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-sm text-slate-600 line-through truncate">{prod.nombre}</p>
-                          <span className="text-[11px] text-slate-400">{prod.cantidad}</span>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0 font-mono font-bold text-sm text-slate-500 line-through">
-                        {prod.precioUltimaCompra > 0 ? `${prod.precioUltimaCompra.toFixed(2)} €` : '0.00 €'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <button
+                  onClick={handleResetCartChecks}
+                  className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" /> Reiniciar
+                </button>
               )}
             </div>
-          )}
+          </div>
+
+          {/* Lista Scrolleable a Pantalla Completa */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-2xl mx-auto w-full">
+            {productosEnCesta.length === 0 ? (
+              <div className="p-8 text-center bg-slate-900/60 border border-dashed border-slate-800 rounded-3xl space-y-3 mt-10">
+                <p className="text-base font-bold text-slate-200">No tienes artículos marcados para hoy</p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Sal del modo supermercado y marca los productos que necesitas comprar en tu lista antes de empezar.
+                </p>
+                <button
+                  onClick={() => setModoSupermercado(false)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
+                >
+                  Volver a mi lista
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {/* 1. ARTÍCULOS PENDIENTES DE RECOGER */}
+                {itemsPendientes.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 block">
+                      Por Recoger ({itemsPendientes.length}) • Falta {totalPendiente.toFixed(2)} €
+                    </span>
+                    {itemsPendientes.map((prod) => (
+                      <div
+                        key={prod.id}
+                        onClick={() => toggleCartCheck(prod.id)}
+                        className="p-4 rounded-2xl bg-slate-900 border-2 border-slate-800 hover:border-emerald-500 shadow-md flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-9 h-9 rounded-xl border-2 border-slate-700 bg-slate-800 flex items-center justify-center shrink-0 text-transparent">
+                            <Check className="w-5 h-5 stroke-[3]" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-extrabold text-base text-white truncate">{prod.nombre}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {getSectionBadge(prod.seccion)}
+                              <span className="text-xs text-slate-400 font-medium">{prod.cantidad}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <span className="font-mono font-black text-lg text-emerald-400">
+                            {prod.precioUltimaCompra > 0 ? `${prod.precioUltimaCompra.toFixed(2)} €` : '0.00 €'}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setEditingProduct(prod);
+                              setEditPrecio(prod.precioUltimaCompra ? prod.precioUltimaCompra.toString() : '');
+                            }}
+                            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                            title="Editar precio"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 2. ARTÍCULOS YA RECOGIDOS EN EL CARRO */}
+                {itemsEnCarrito.length > 0 && (
+                  <div className="pt-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-semibold">
+                      <span>Recogidos en el carrito ({itemsEnCarrito.length})</span>
+                      <span className="font-mono">{totalEnCarrito.toFixed(2)} €</span>
+                    </div>
+                    {itemsEnCarrito.map((prod) => (
+                      <div
+                        key={prod.id}
+                        onClick={() => toggleCartCheck(prod.id)}
+                        className="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/60 opacity-55 flex items-center justify-between gap-3 cursor-pointer select-none active:scale-[0.98] transition-all"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-5 h-5 stroke-[3]" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm text-slate-400 line-through truncate">{prod.nombre}</p>
+                            <span className="text-xs text-slate-500">{prod.cantidad}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0 font-mono font-bold text-sm text-slate-400 line-through">
+                          {prod.precioUltimaCompra > 0 ? `${prod.precioUltimaCompra.toFixed(2)} €` : '0.00 €'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      ) : (
-        /* VISTA 2: GESTIÓN DE LA LISTA HABITUAL (Preparar la compra antes de ir) */
+      )}
+
+      {/* VISTA 2: GESTIÓN DE LA LISTA HABITUAL (Preparar la compra antes de ir) */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -500,7 +561,6 @@ export const SmartGrocerySection: React.FC<SmartGrocerySectionProps> = ({
           </div>
           )}
         </div>
-      )}
 
       {/* Modal para Editar/Actualizar Precio Real */}
       {editingProduct && (
