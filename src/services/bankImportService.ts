@@ -238,7 +238,11 @@ export function buildProfileFromTransactions(
 
   const deudasAutoDetectadas: DebtItem[] = Array.from(deudasDetectadasMap.entries()).map(([nombre, info]) => {
     // Si ya existe una deuda configurada a mano por el usuario con saldo pendiente, preservarla
-    const manual = baseProfile?.deudas?.find(d => d.nombre.toLowerCase() === nombre.toLowerCase());
+    const manual = baseProfile?.deudas?.find(d => {
+      const dName = d.nombre.toLowerCase().trim();
+      const nName = nombre.toLowerCase().trim();
+      return dName === nName || dName.includes(nName) || nName.includes(dName);
+    });
     if (manual) return manual;
 
     const lower = nombre.toLowerCase();
@@ -254,11 +258,16 @@ export function buildProfileFromTransactions(
     };
   });
 
-  const deudasFinales = baseProfile?.deudas && baseProfile.deudas.length > 0 && deudasAutoDetectadas.length === 0
-    ? baseProfile.deudas
-    : deudasAutoDetectadas.length > 0
-      ? deudasAutoDetectadas
-      : (baseProfile?.deudas || []);
+  // Preservar también deudas manuales de baseProfile que no se hayan detectado explícitamente en este extracto bancario
+  const deudasNoDetectadas = (baseProfile?.deudas || []).filter(manualDebt => {
+    return !deudasAutoDetectadas.some(autoDebt => {
+      const dName = manualDebt.nombre.toLowerCase().trim();
+      const nName = autoDebt.nombre.toLowerCase().trim();
+      return dName === nName || dName.includes(nName) || nName.includes(dName);
+    });
+  });
+
+  const deudasFinales = [...deudasAutoDetectadas, ...deudasNoDetectadas];
 
   const fugasPresupuesto = Array.from(fugasMap.values()).map(f => ({
     nombre: f.nombre + (f.veces > 1 ? ' (' + f.veces + ' veces)' : ''),

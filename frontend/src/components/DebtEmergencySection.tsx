@@ -1,16 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { EmergencyFundPlan, DebtPlanResult } from '../../../src/models/types';
-import { ShieldCheck, CreditCard, Award, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, CreditCard, Award, ArrowUpRight, CheckCircle2, Edit2, Check, X } from 'lucide-react';
+import { parseEuro } from './EditProfileModal';
 
 interface DebtEmergencySectionProps {
   emergencyPlan: EmergencyFundPlan;
   debtPlan: DebtPlanResult;
+  onUpdateDebt?: (deudaNombre: string, newSaldo: number, newCuota?: number) => void;
 }
 
 export const DebtEmergencySection: React.FC<DebtEmergencySectionProps> = ({
   emergencyPlan,
   debtPlan,
+  onUpdateDebt,
 }) => {
+  const [editingDebtName, setEditingDebtName] = useState<string | null>(null);
+  const [editSaldo, setEditSaldo] = useState<string>('');
+  const [editCuota, setEditCuota] = useState<string>('');
+
+  const startEdit = (nombre: string, currentSaldo: number, currentCuota: number) => {
+    setEditingDebtName(nombre);
+    setEditSaldo(String(currentSaldo));
+    setEditCuota(String(currentCuota));
+  };
+
+  const cancelEdit = () => {
+    setEditingDebtName(null);
+  };
+
+  const handleSaveDebt = (nombre: string) => {
+    if (onUpdateDebt) {
+      const saldo = parseEuro(editSaldo);
+      const cuota = parseEuro(editCuota);
+      onUpdateDebt(nombre, saldo, cuota > 0 ? cuota : undefined);
+    }
+    setEditingDebtName(null);
+  };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Fondo de Emergencia */}
@@ -118,29 +143,106 @@ export const DebtEmergencySection: React.FC<DebtEmergencySectionProps> = ({
             </div>
 
             <div className="space-y-2.5">
-              {debtPlan.avalancha.ordenDeudas.map((deuda, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-4 bg-slate-50/70 border border-slate-200/60 rounded-2xl"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <div>
-                      <p className="font-semibold text-slate-900 text-sm">{deuda.nombre}</p>
-                      <p className="text-xs text-slate-400">Cuota: {deuda.cuotaMensual.toFixed(2)} € • Pago día {deuda.fechaPago}</p>
+              {debtPlan.avalancha.ordenDeudas.map((deuda, idx) => {
+                const isEditing = editingDebtName === deuda.nombre;
+
+                if (isEditing) {
+                  return (
+                    <div
+                      key={idx}
+                      className="p-4 bg-white border-2 border-purple-400 rounded-2xl shadow-md space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-sm">{deuda.nombre}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveDebt(deuda.nombre)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition shadow-sm"
+                            title="Guardar deuda real"
+                          >
+                            <Check className="w-3.5 h-3.5" /> Guardar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="p-1 text-slate-400 hover:text-slate-600 rounded-lg transition cursor-pointer"
+                            title="Cancelar"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
+                            Saldo real pendiente (€)
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={editSaldo}
+                            onChange={(e) => setEditSaldo(e.target.value)}
+                            placeholder="Ej: 2.998,30"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-bold focus:bg-white focus:outline-none focus:border-purple-600"
+                            autoFocus
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
+                            Cuota al mes (€)
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={editCuota}
+                            onChange={(e) => setEditCuota(e.target.value)}
+                            placeholder="Ej: 100"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-bold focus:bg-white focus:outline-none focus:border-purple-600"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Introduce el saldo exacto que te queda por pagar (admite coma y punto: 2.998,30).
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-4 bg-slate-50/70 border border-slate-200/60 rounded-2xl hover:bg-slate-50 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-slate-900 text-sm">{deuda.nombre}</p>
+                          <button
+                            type="button"
+                            onClick={() => startEdit(deuda.nombre, deuda.saldoPendiente, deuda.cuotaMensual)}
+                            className="text-slate-400 hover:text-purple-600 p-0.5 rounded transition cursor-pointer"
+                            title="Editar saldo o cuota real"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-400">Cuota: {deuda.cuotaMensual.toFixed(2)} € • Pago día {deuda.fechaPago}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="font-bold text-slate-900 text-sm">{deuda.saldoPendiente.toFixed(2)} €</p>
+                      <span className="inline-block text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
+                        {deuda.tipoInteres}% TAE
+                      </span>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    <p className="font-bold text-slate-900 text-sm">{deuda.saldoPendiente.toFixed(2)} €</p>
-                    <span className="inline-block text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
-                      {deuda.tipoInteres}% TAE
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { UserFinancialProfile, DebtItem } from '../../../src/models/types';
-import { X, Check, Plus, Trash2, HelpCircle } from 'lucide-react';
+import { X, Check, Plus, Trash2, HelpCircle, Edit2 } from 'lucide-react';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -8,6 +8,15 @@ interface EditProfileModalProps {
   currentProfile: UserFinancialProfile;
   onSave: (updated: UserFinancialProfile) => void;
 }
+
+export const parseEuro = (val: string | number): number => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  // Soporta formato europeo "2.998,30" o "2998,30" y formato estándar "2998.30"
+  const clean = String(val).replace(/\./g, '').replace(',', '.').trim();
+  const num = parseFloat(clean);
+  return isNaN(num) ? 0 : num;
+};
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   isOpen,
@@ -36,14 +45,26 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [nuevaDeudaTAE, setNuevaDeudaTAE] = useState('');
   const [nuevaDeudaDia, setNuevaDeudaDia] = useState('05');
 
+  // Sincronizar estados locales cada vez que el modal se abra o cambie currentProfile
+  useEffect(() => {
+    if (isOpen) {
+      setIngresosNetos(currentProfile.ingresosNetosMensuales);
+      setFondoEmergencia(currentProfile.fondoEmergenciaActual);
+      setObjetivoAhorro(currentProfile.objetivoAhorroMensual);
+      setFijos({ ...currentProfile.gastosFijos });
+      setVariables({ ...currentProfile.gastosVariables });
+      setDeudas([...currentProfile.deudas]);
+    }
+  }, [isOpen, currentProfile]);
+
   if (!isOpen) return null;
 
   const handleAddDeuda = (e: React.FormEvent) => {
     e.preventDefault();
-    const saldo = parseFloat(nuevaDeudaSaldo);
-    const cuota = parseFloat(nuevaDeudaCuota);
-    const tae = parseFloat(nuevaDeudaTAE);
-    if (!nuevaDeudaNombre.trim() || isNaN(saldo) || isNaN(cuota) || isNaN(tae)) return;
+    const saldo = parseEuro(nuevaDeudaSaldo);
+    const cuota = parseEuro(nuevaDeudaCuota);
+    const tae = parseEuro(nuevaDeudaTAE);
+    if (!nuevaDeudaNombre.trim() || isNaN(saldo) || isNaN(cuota)) return;
 
     setDeudas([
       ...deudas,
@@ -51,7 +72,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         nombre: nuevaDeudaNombre.trim(),
         saldoPendiente: saldo,
         cuotaMensual: cuota,
-        tipoInteres: tae,
+        tipoInteres: isNaN(tae) || tae === 0 ? 19.9 : tae,
         fechaPago: nuevaDeudaDia || '05',
       },
     ]);
@@ -60,6 +81,20 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     setNuevaDeudaSaldo('');
     setNuevaDeudaCuota('');
     setNuevaDeudaTAE('');
+  };
+
+  const handleUpdateExistingDeuda = (index: number, field: keyof DebtItem, rawVal: string | number) => {
+    setDeudas(prev => {
+      const copy = [...prev];
+      const item = { ...copy[index] };
+      if (field === 'saldoPendiente' || field === 'cuotaMensual' || field === 'tipoInteres') {
+        (item[field] as number) = parseEuro(rawVal);
+      } else {
+        (item[field] as any) = rawVal;
+      }
+      copy[index] = item;
+      return copy;
+    });
   };
 
   const handleRemoveDeuda = (index: number) => {
@@ -314,28 +349,61 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <div className="space-y-4">
               <p className="text-xs text-slate-500">Préstamos, tarjetas de crédito revolving o compras aplazadas:</p>
               
-              {/* Lista actual de deudas */}
-              <div className="space-y-2">
+              {/* Lista actual de deudas con edición directa */}
+              <div className="space-y-3">
                 {deudas.length === 0 ? (
                   <p className="text-xs text-slate-400 py-3 text-center border border-dashed border-slate-200 rounded-xl">
                     No tienes deudas añadidas. ¡Excelente!
                   </p>
                 ) : (
                   deudas.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/70 rounded-xl">
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{d.nombre}</p>
-                        <p className="text-xs text-slate-400">
-                          Saldo: {d.saldoPendiente} € • Cuota: {d.cuotaMensual} €/mes • {d.tipoInteres}% TAE
-                        </p>
+                    <div key={i} className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-slate-900">{d.nombre}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDeuda(i)}
+                          className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                          title="Eliminar deuda"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveDeuda(i)}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Saldo total (€)</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            defaultValue={d.saldoPendiente}
+                            onBlur={(e) => handleUpdateExistingDeuda(i, 'saldoPendiente', e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-900 font-semibold focus:outline-none focus:border-slate-900"
+                            placeholder="Ej: 2.998,30"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Cuota/mes (€)</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            defaultValue={d.cuotaMensual}
+                            onBlur={(e) => handleUpdateExistingDeuda(i, 'cuotaMensual', e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-900 font-semibold focus:outline-none focus:border-slate-900"
+                            placeholder="Ej: 100"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">% TAE (Interés)</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            defaultValue={d.tipoInteres}
+                            onBlur={(e) => handleUpdateExistingDeuda(i, 'tipoInteres', e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-900 font-semibold focus:outline-none focus:border-slate-900"
+                            placeholder="Ej: 19.9"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}
@@ -347,29 +415,31 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <input
                     type="text"
-                    placeholder="Nombre (ej: Tarjeta)"
+                    placeholder="Nombre (ej: VISA &GO)"
                     value={nuevaDeudaNombre}
                     onChange={(e) => setNuevaDeudaNombre(e.target.value)}
                     className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"
                   />
                   <input
-                    type="number"
-                    placeholder="Saldo (€)"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Saldo (€) ej: 2.998,30"
                     value={nuevaDeudaSaldo}
                     onChange={(e) => setNuevaDeudaSaldo(e.target.value)}
                     className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"
                   />
                   <input
-                    type="number"
-                    placeholder="Cuota/mes (€)"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Cuota/mes (€) ej: 100"
                     value={nuevaDeudaCuota}
                     onChange={(e) => setNuevaDeudaCuota(e.target.value)}
                     className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"
                   />
                   <input
-                    type="number"
-                    step="0.1"
-                    placeholder="% TAE"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="% TAE (ej: 19.9)"
                     value={nuevaDeudaTAE}
                     onChange={(e) => setNuevaDeudaTAE(e.target.value)}
                     className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none"

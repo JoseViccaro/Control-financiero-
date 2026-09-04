@@ -220,6 +220,26 @@ export function App() {
     saveProfileWithSync(updatedProfile);
   };
 
+  const handleUpdateDebt = (deudaNombre: string, newSaldo: number, newCuota?: number) => {
+    const updatedDeudas = (perfil.deudas || []).map(d => {
+      const dName = d.nombre.toLowerCase().trim();
+      const targetName = deudaNombre.toLowerCase().trim();
+      if (dName === targetName || dName.includes(targetName) || targetName.includes(dName)) {
+        return {
+          ...d,
+          saldoPendiente: newSaldo,
+          cuotaMensual: newCuota !== undefined ? newCuota : d.cuotaMensual,
+        };
+      }
+      return d;
+    });
+
+    saveProfileWithSync({
+      ...perfil,
+      deudas: updatedDeudas,
+    });
+  };
+
   const handleReset = () => {
     if (confirm('¿Restablecer datos a los valores de ejemplo iniciales?')) {
       setPerfil(INITIAL_PROFILE);
@@ -472,6 +492,7 @@ export function App() {
           <DebtEmergencySection
             emergencyPlan={emergencyPlan}
             debtPlan={debtPlan}
+            onUpdateDebt={handleUpdateDebt}
           />
         </section>
 
