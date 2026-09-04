@@ -100,14 +100,26 @@ export function App() {
 
   const loadCloudProfile = async (userId: string) => {
     if (!supabase) return;
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('profile_data')
-      .eq('user_id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('profile_data')
+        .eq('user_id', userId)
+        .single();
 
-    if (data && data.profile_data) {
-      setPerfil(data.profile_data);
+      if (error) {
+        console.warn('Error loading cloud profile:', error.message);
+        return;
+      }
+
+      if (data && data.profile_data) {
+        setPerfil(data.profile_data);
+        try {
+          localStorage.setItem('cf_local_profile_v1', JSON.stringify(data.profile_data));
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.error('Failed to load cloud profile:', err);
     }
   };
 
